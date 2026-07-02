@@ -4,7 +4,38 @@ This directory contains the initial PostgreSQL schema for a ticket system with c
 
 ## Files
 
+- `TicketSystem.sln` - Visual Studio solution file for the application.
 - `schema.sql` - SQL script for creating tables, relationships, and indexes.
+- `global.json` - pins the local SDK to .NET 8 for Visual Studio 2022 compatibility.
+- `src/TicketSystem.Web` - Blazor Web App project configured for MudBlazor and server interactivity.
+- `src/TicketSystem.Realtime` - standalone ASP.NET Core SignalR host used for chat communication.
+- `TicketSystem.slnLaunch` - Visual Studio multi-project launch profile for starting Web and Realtime together.
+
+## Application Stack
+
+The generated solution currently targets `net8.0` because this machine has .NET 8 installed and it is the safest option for Visual Studio 2022 compatibility. MudBlazor 9.x supports .NET 8, .NET 9, and .NET 10, so the project can be upgraded later when the target development environment has a compatible SDK installed.
+
+Current setup:
+
+- `TicketSystem.Web` is a Blazor Web App with interactive server components.
+- `TicketSystem.Web` references `MudBlazor` version `9.6.0`.
+- `TicketSystem.Web` runs as the MudBlazor application.
+- `TicketSystem.Realtime` contains the `ChatHub` SignalR hub and the `ChatMessage` message model.
+- `TicketSystem.Realtime` maps the SignalR chat endpoint at `/hubs/chat`.
+- SignalR groups are named with the `chat-session:{sessionId}` pattern, matching the database `chat_session` concept.
+
+## Visual Studio Launch
+
+Open `TicketSystem.sln` in Visual Studio 2022 and select the `TicketSystem Web + Realtime` launch profile. Starting that profile launches both projects:
+
+- `TicketSystem.Web` on `https://localhost:7097` and `http://localhost:5047`.
+- `TicketSystem.Realtime` on `https://localhost:7197` and `http://localhost:5057`.
+
+The Realtime SignalR hub URL is:
+
+```text
+https://localhost:7197/hubs/chat
+```
 
 ## Data Model
 

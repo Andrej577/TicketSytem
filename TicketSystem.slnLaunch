@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "TicketSystem Web + Realtime",
+    "Projects": [
+      {
+        "Path": "src\\TicketSystem.Realtime\\TicketSystem.Realtime.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\TicketSystem.Web\\TicketSystem.Web.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      }
+    ]
+  }
+]

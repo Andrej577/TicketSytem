@@ -6,6 +6,7 @@ publish/
 artifacts/
 
 # .NET generated files
+.dotnet/
 *.user
 *.rsuser
 *.suo
@@ -84,3 +85,5 @@ docker-compose.override.yml
 *.bak
 *.dump
 *.sql.gz
+
+.agents/
