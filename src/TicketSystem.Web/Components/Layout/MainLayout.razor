@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager NavigationManager
 
 <MudThemeProvider IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
@@ -25,12 +27,15 @@
                        OnClick="ToggleTheme" />
     </MudAppBar>
 
-    <MudDrawer @bind-Open="_drawerOpen"
-               Variant="DrawerVariant.Persistent"
-               Elevation="0"
-               Class="ticket-drawer" />
+    @if (ShouldShowDrawer)
+    {
+        <MudDrawer @bind-Open="_drawerOpen"
+                   Variant="DrawerVariant.Persistent"
+                   Elevation="0"
+                   Class="ticket-drawer" />
+    }
 
-    <MudMainContent Class="ticket-main">
+    <MudMainContent Class="@($"ticket-main {MainContentClass}")">
         @Body
     </MudMainContent>
 </MudLayout>
@@ -45,6 +50,15 @@
         ? Icons.Material.Outlined.LightMode
         : Icons.Material.Outlined.DarkMode;
 
+    private bool ShouldShowDrawer => !IsHomePage();
+
+    private string MainContentClass => ShouldShowDrawer ? "ticket-main-with-drawer" : "ticket-main-full";
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
     private void ToggleTheme()
     {
         _isDarkMode = !_isDarkMode;
@@ -53,6 +67,25 @@
     private void ToggleDrawer()
     {
         _drawerOpen = !_drawerOpen;
+    }
+
+    private bool IsHomePage()
+    {
+        var relativePath = NavigationManager
+            .ToBaseRelativePath(NavigationManager.Uri)
+            .Split(['?', '#'], 2)[0];
+
+        return string.IsNullOrEmpty(relativePath);
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
     }
 }
 

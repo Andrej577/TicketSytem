@@ -184,8 +184,15 @@
 
 ::deep .ticket-main {
     min-height: 100vh;
-    padding: 48px 0 0 220px;
     background: #ffffff;
+}
+
+::deep .ticket-main-with-drawer {
+    padding: 48px 0 0 220px;
+}
+
+::deep .ticket-main-full {
+    padding: 48px 0 0;
 }
 
 @media (max-width: 960px) {
@@ -208,7 +215,7 @@
         width: 190px;
     }
 
-    ::deep .ticket-main {
+    ::deep .ticket-main-with-drawer {
         padding-left: 190px;
     }
 }
@@ -222,7 +229,8 @@
         display: none;
     }
 
-    ::deep .ticket-main {
+    ::deep .ticket-main-with-drawer,
+    ::deep .ticket-main-full {
         padding-left: 0;
     }
 }
