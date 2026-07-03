@@ -4,32 +4,74 @@
     color: #1f2933;
 }
 
+.ticket-theme-dark {
+    background: #111827;
+    color: #f8fafc;
+}
+
+.ticket-theme-light {
+    background: #f7f8fa;
+    color: #1f2933;
+}
+
 ::deep .ticket-appbar {
     height: 48px;
-    border-bottom: 1px solid #121722;
+    border-bottom: 1px solid transparent;
+    padding: 0 28px 0 0;
+}
+
+::deep .ticket-appbar.ticket-theme-dark {
+    border-bottom-color: #121722;
     background: #1f2633;
     color: #f8fafc;
-    padding: 0 28px 0 0;
+}
+
+::deep .ticket-appbar.ticket-theme-light {
+    border-bottom-color: #d8dee8;
+    background: #ffffff;
+    color: #1f2933;
 }
 
 ::deep .ticket-product-tab {
     height: 48px;
     min-width: 74px;
     border-radius: 0;
-    color: #d9dee7;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0;
     text-transform: uppercase;
 }
 
-::deep .ticket-product-tab:hover {
+::deep .ticket-appbar.ticket-theme-dark .ticket-product-tab {
+    color: #d9dee7;
+}
+
+::deep .ticket-appbar.ticket-theme-light .ticket-product-tab {
+    color: #334155;
+}
+
+::deep .ticket-appbar.ticket-theme-dark .ticket-product-tab:hover {
     background: rgba(255, 255, 255, 0.08);
 }
 
-::deep .ticket-product-tab-active {
+::deep .ticket-appbar.ticket-theme-light .ticket-product-tab:hover {
+    background: #eef2f7;
+}
+
+::deep .ticket-appbar.ticket-theme-dark .ticket-product-tab-active {
     background: #333b49;
     color: #ffffff;
+}
+
+::deep .ticket-appbar.ticket-theme-light .ticket-product-tab-active {
+    background: #e8edf5;
+    color: #111827;
+}
+
+::deep .ticket-theme-toggle {
+    width: 36px;
+    height: 36px;
+    margin-right: 8px;
 }
 
 ::deep .ticket-channel-menu {

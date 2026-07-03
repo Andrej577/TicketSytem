@@ -1,12 +1,12 @@
 ﻿@inherits LayoutComponentBase
 
-<MudThemeProvider IsDarkMode="false" />
+<MudThemeProvider IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout Class="ticket-layout">
-    <MudAppBar Elevation="0" Dense="true" Class="ticket-appbar">
+<MudLayout Class="@($"ticket-layout {ThemeClass}")">
+    <MudAppBar Elevation="0" Dense="true" Class="@($"ticket-appbar {ThemeClass}")">
         <MudButton Href="/"
                    Variant="Variant.Text"
                    Color="Color.Inherit"
@@ -16,6 +16,13 @@
         <MudButton Href="/tickets" Variant="Variant.Text" Color="Color.Inherit" Class="ticket-product-tab">Tickets</MudButton>
         <MudButton Href="/knowledge-base" Variant="Variant.Text" Color="Color.Inherit" Class="ticket-product-tab">KB</MudButton>
         <MudButton Href="/customers" Variant="Variant.Text" Color="Color.Inherit" Class="ticket-product-tab">Customers</MudButton>
+
+        <MudSpacer />
+
+        <MudIconButton Icon="@ThemeIcon"
+                       Color="Color.Inherit"
+                       Class="ticket-theme-toggle"
+                       OnClick="ToggleTheme" />
     </MudAppBar>
 
     <MudDrawer @bind-Open="_drawerOpen"
@@ -29,7 +36,19 @@
 </MudLayout>
 
 @code {
+    private bool _isDarkMode = true;
     private bool _drawerOpen = true;
+
+    private string ThemeClass => _isDarkMode ? "ticket-theme-dark" : "ticket-theme-light";
+
+    private string ThemeIcon => _isDarkMode
+        ? Icons.Material.Outlined.LightMode
+        : Icons.Material.Outlined.DarkMode;
+
+    private void ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+    }
 
     private void ToggleDrawer()
     {
