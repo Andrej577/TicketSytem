@@ -61,7 +61,7 @@ A chat session is a good boundary for a SignalR room/group. When a customer and 
 
 ### ticket
 
-The `ticket` table represents a concrete support request.
+The `ticket` table represents a concrete support request
 
 - `id` is a `uuid` primary key.
 - `ticket_number` is an auto-incrementing business number that is useful for displaying tickets to users.
