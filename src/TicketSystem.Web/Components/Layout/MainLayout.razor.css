@@ -1,78 +1,187 @@
-.page {
-    position: relative;
-    display: flex;
-    flex-direction: column;
+.ticket-layout {
+    min-height: 100vh;
+    background: #f7f8fa;
+    color: #1f2933;
 }
 
-main {
-    flex: 1;
+::deep .ticket-appbar {
+    height: 48px;
+    border-bottom: 1px solid #121722;
+    background: #1f2633;
+    color: #f8fafc;
+    padding: 0 28px 0 0;
 }
 
-.sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+::deep .ticket-product-tab {
+    height: 48px;
+    min-width: 74px;
+    border-radius: 0;
+    color: #d9dee7;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
 }
 
-.top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
+::deep .ticket-product-tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+::deep .ticket-product-tab-active {
+    background: #333b49;
+    color: #ffffff;
+}
+
+::deep .ticket-channel-menu {
+    margin-right: 10px;
+    color: #eef2f7;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+::deep .ticket-toolbar-icon {
+    width: 36px;
+    height: 36px;
+    color: #dfe5ee;
+}
+
+::deep .ticket-user-avatar {
+    width: 30px;
+    height: 30px;
+    margin-left: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.75);
+    background: #9b6b54;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+::deep .ticket-drawer {
+    width: 220px;
+    height: calc(100vh - 48px);
+    margin-top: 48px;
+    border-right: 1px solid #dfe3ea;
+    background: #f0f2f7;
+    color: #26313d;
+    overflow: hidden;
+}
+
+::deep .ticket-nav {
+    height: calc(100vh - 94px);
+    padding: 14px 0 18px;
+    overflow-y: auto;
+}
+
+::deep .ticket-nav .mud-nav-link {
+    min-height: 32px;
+    padding: 0 16px;
+    border-radius: 0;
+    color: #202b36;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+::deep .ticket-nav .mud-nav-link .mud-nav-link-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+::deep .ticket-nav .mud-nav-link.active,
+::deep .ticket-nav .mud-nav-link:hover {
+    background: #ffffff;
+    color: #111827;
+}
+
+.ticket-section-heading {
     display: flex;
     align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 0 10px 0 16px;
+    color: #202b36;
+    font-size: 0.78rem;
+    font-weight: 700;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
+.ticket-section-heading-active {
+    background: #e5e7f4;
+}
+
+::deep .ticket-section-action {
+    width: 26px;
+    height: 26px;
+    color: #4b5563;
+}
+
+.ticket-sidebar-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 32px;
+    padding: 8px 16px 2px;
+    color: #5f6b78;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+::deep .ticket-star {
+    color: #f6b91f;
+}
+
+::deep .ticket-collapse-button {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 30px;
+    height: 30px;
+    color: #4b5563;
+}
+
+::deep .ticket-main {
+    min-height: 100vh;
+    padding: 48px 0 0 220px;
+    background: #ffffff;
+}
+
+@media (max-width: 960px) {
+    ::deep .ticket-appbar {
+        padding-right: 12px;
     }
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
+    ::deep .ticket-product-tab {
+        min-width: 58px;
+        padding: 0 8px;
+        font-size: 0.66rem;
     }
 
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
+    ::deep .ticket-channel-menu,
+    ::deep .ticket-toolbar-icon:nth-of-type(n + 3) {
+        display: none;
     }
 
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
+    ::deep .ticket-drawer {
+        width: 190px;
     }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
+    ::deep .ticket-main {
+        padding-left: 190px;
     }
 }
 
-@media (min-width: 641px) {
-    .page {
-        flex-direction: row;
+@media (max-width: 720px) {
+    ::deep .ticket-product-tab:nth-of-type(n + 4) {
+        display: none;
     }
 
-    .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
+    ::deep .ticket-drawer {
+        display: none;
     }
 
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
-
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+    ::deep .ticket-main {
+        padding-left: 0;
     }
 }
 

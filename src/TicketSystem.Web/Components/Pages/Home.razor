@@ -1,15 +1,129 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<PageTitle>All Tickets</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6">
-    <MudStack Spacing="3">
-        <MudText Typo="Typo.h4">Ticket System</MudText>
-        <MudText Typo="Typo.body1">
-            Initial MudBlazor web application shell with SignalR chat infrastructure.
-        </MudText>
-        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
-            Preferred UI direction is the Zoho-style ticket detail workspace documented in the root README.
-        </MudAlert>
-    </MudStack>
-</MudContainer>
+<div class="ticket-workspace">
+    <div class="ticket-viewbar">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ticket-view-title">
+            <MudIcon Icon="@Icons.Material.Outlined.StarBorder" Size="Size.Small" />
+            <MudText Typo="Typo.h6">All Tickets</MudText>
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
+        </MudStack>
+
+        <MudSpacer />
+
+        <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined" Class="ticket-display-toggle">
+            <MudIconButton Icon="@Icons.Material.Outlined.ViewList" Size="Size.Small" />
+            <MudIconButton Icon="@Icons.Material.Outlined.ViewColumn" Size="Size.Small" Class="ticket-display-active" />
+            <MudIconButton Icon="@Icons.Material.Outlined.KeyboardArrowDown" Size="Size.Small" />
+        </MudButtonGroup>
+        <MudIconButton Icon="@Icons.Material.Outlined.MoreHoriz" Size="Size.Small" Class="ticket-more-button" />
+    </div>
+
+    <div class="ticket-board-shell">
+        <div class="ticket-board">
+            @foreach (var column in Columns)
+            {
+                <section class="ticket-column">
+                    <div class="ticket-column-header">
+                        <MudText Typo="Typo.subtitle2" Class="@column.HeaderClass">@column.Title</MudText>
+                    </div>
+
+                    @foreach (var item in column.Items)
+                    {
+                        <MudPaper Elevation="0" Class="ticket-card">
+                            <div class="ticket-card-icon @item.IconClass">
+                                <MudIcon Icon="@item.Icon" Size="Size.Small" />
+                            </div>
+
+                            <div class="ticket-card-body">
+                                <MudText Typo="Typo.subtitle2" Class="ticket-card-title">@item.Title</MudText>
+                                <div class="ticket-card-owner">@item.Owner</div>
+                                <div class="ticket-card-meta">
+                                    <span>@item.DueText</span>
+                                    <span>@item.Status</span>
+                                    <span class="ticket-card-count">@item.Count</span>
+                                </div>
+                            </div>
+
+                            <MudAvatar Size="Size.Small" Class="ticket-card-avatar">@item.Initials</MudAvatar>
+                        </MudPaper>
+                    }
+                </section>
+            }
+        </div>
+
+        <aside class="ticket-phone-preview">
+            <div class="ticket-phone-speaker"></div>
+            <div class="ticket-phone-screen">
+                <div class="ticket-phone-status">Vodafone IN <span>12:14 PM</span></div>
+                <div class="ticket-phone-header">
+                    <MudIcon Icon="@Icons.Material.Outlined.ChevronLeft" Size="Size.Small" />
+                    <span>Open Tickets</span>
+                    <MudIcon Icon="@Icons.Material.Outlined.Search" Size="Size.Small" />
+                    <MudIcon Icon="@Icons.Material.Outlined.Add" Size="Size.Small" />
+                </div>
+                <div class="ticket-phone-tabs">
+                    <span class="ticket-phone-tab-active"></span>
+                    <span></span>
+                    <span></span>
+                </div>
+
+                @foreach (var item in MobileTickets)
+                {
+                    <div class="ticket-phone-item">
+                        <MudIcon Icon="@item.Icon" Size="Size.Small" />
+                        <div>
+                            <strong>@item.Title</strong>
+                            <span>@item.Owner - @item.Status</span>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="ticket-phone-home"></div>
+        </aside>
+    </div>
+</div>
+
+@code {
+    private readonly TicketColumn[] Columns =
+    [
+        new("Overdue (5)", "ticket-overdue", [
+            new("#864 Wireless charging", "Morgan Leverett", "late by 1 day 11 hours", "Open", "4", "ML", Icons.Material.Outlined.MarkEmailRead, "ticket-icon-success"),
+            new("#592 Camera app not opening", "Sam Rossner", "late by 01:34 hour", "In Progress", "5", "SR", Icons.Material.Outlined.SentimentSatisfied, "ticket-icon-smile"),
+            new("#571 GPS not working", "Sam Rossner", "late by 01:34 hour", "Open", "1", "SR", Icons.Material.Outlined.Language, "ticket-icon-globe"),
+            new("#455 Setting up FinderID", "Stacy Roach", "late by 01:34 hour", "Open", "2", "ST", Icons.Material.Outlined.MailOutline, "ticket-icon-mail"),
+            new("#442 Can I back up data automatically?", "Sarah Osbourne", "late by 01:34 hour", "Open", "2", "SO", Icons.Material.Outlined.SupportAgent, "ticket-icon-phone")
+        ]),
+        new("Due in 6 hours (14)", "ticket-due-soon", [
+            new("#595 GPS not working", "Casie Fletcher", "Tomorrow 04:00 AM", "In Progress", "3", "CF", Icons.Material.Outlined.MarkEmailRead, "ticket-icon-success"),
+            new("#671 Apps take time to load", "Phillip Collins", "Tomorrow 04:00 AM", "Open", "1", "PC", Icons.Material.Outlined.MailOutline, "ticket-icon-mail"),
+            new("#560 Unable to turn on location services", "Shane Howell", "Tomorrow 04:00 AM", "In Progress", "5", "SH", Icons.Material.Outlined.LocationOff, "ticket-icon-location"),
+            new("#543 Reg picture quality", "Barry Zingovich", "Tomorrow 04:00 AM", "Escalated", "3", "BZ", Icons.Material.Outlined.SentimentSatisfied, "ticket-icon-smile"),
+            new("#539 zPhone battery needs to be fixed!", "Sam Rossner", "Tomorrow 04:00 AM", "Open", "6", "SR", Icons.Material.Outlined.Language, "ticket-icon-globe"),
+            new("#445 Using live wallpapers", "Peter Graf", "Tomorrow 04:00 AM", "In Progress", "3", "PG", Icons.Material.Outlined.LocationOn, "ticket-icon-location")
+        ]),
+        new("Due in 12 hours and more (25+)", "ticket-due-later", [
+            new("#884 Rolling back updates", "Sam Rossner", "Tomorrow 12:00 PM", "Open", "1", "SR", Icons.Material.Outlined.MarkEmailRead, "ticket-icon-success"),
+            new("#882 zPhone power issue", "James van der Meer", "Tomorrow 12:00 PM", "Open", "2", "JM", Icons.Material.Outlined.LocationOn, "ticket-icon-location"),
+            new("#880 zPhone transfer failed", "Pavithra", "Tomorrow 12:00 PM", "Open", "1", "PV", Icons.Material.Outlined.MailOutline, "ticket-icon-mail"),
+            new("#879 Apps taking storage", "Phillip Collins", "Tomorrow 12:00 PM", "Open", "1", "PC", Icons.Material.Outlined.MailOutline, "ticket-icon-mail"),
+            new("#875 battery drained quickly", "Ashlin Paul", "Tomorrow 12:00 PM", "Open", "2", "AP", Icons.Material.Outlined.Language, "ticket-icon-globe"),
+            new("#854 What is support SLA?", "Sam Rossner", "Tomorrow 12:00 PM", "Open", "2", "SR", Icons.Material.Outlined.Forum, "ticket-icon-chat")
+        ])
+    ];
+
+    private IEnumerable<TicketItem> MobileTickets => Columns.SelectMany(column => column.Items).Take(7);
+
+    private sealed record TicketColumn(string Title, string HeaderClass, TicketItem[] Items);
+
+    private sealed record TicketItem(
+        string Title,
+        string Owner,
+        string DueText,
+        string Status,
+        string Count,
+        string Initials,
+        string Icon,
+        string IconClass);
+}
