@@ -1,6 +1,9 @@
+using TicketSystem.Api.Features.UpdateDatabase;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddDatabaseUpdater();
 
 var app = builder.Build();
 

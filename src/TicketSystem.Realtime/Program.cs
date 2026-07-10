@@ -2,12 +2,17 @@ using TicketSystem.Realtime.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()
+    ?? ["https://localhost:7097", "http://localhost:5047"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("WebApp", policy =>
     {
         policy
-            .WithOrigins("https://localhost:7097", "http://localhost:5047")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
