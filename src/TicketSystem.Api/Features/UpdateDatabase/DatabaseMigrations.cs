@@ -4,12 +4,13 @@ namespace TicketSystem.Api.Features.UpdateDatabase;
 
 public static class DatabaseMigrations
 {
-    public static int DatabaseVersion { get; } = 2;
+    public static int DatabaseVersion { get; } = 3;
 
     public static IReadOnlyList<DatabaseMigration> All { get; } =
     [
         new(1, CreateInitialTables()),
-        new(2, CreateKnowledgeTable())
+        new(2, CreateKnowledgeTable()),
+        new(3, NormalizeDatabase())
     ];
 
     private static string CreateInitialTables()
@@ -145,6 +146,57 @@ public static class DatabaseMigrations
             CREATE INDEX IF NOT EXISTS ix_knowledge_status ON knowledge(status);
             CREATE INDEX IF NOT EXISTS ix_knowledge_category ON knowledge(category);
             CREATE INDEX IF NOT EXISTS ix_knowledge_author_id ON knowledge(author_id);
+            """;
+    }
+
+    private static string NormalizeDatabase()
+    {
+        return """
+            CREATE TABLE user_type (id integer PRIMARY KEY, code varchar(30) NOT NULL UNIQUE, name varchar(100) NOT NULL);
+            INSERT INTO user_type VALUES (1, 'customer', 'Customer'), (2, 'operator', 'Operator'), (3, 'administrator', 'Administrator');
+            INSERT INTO user_type (id, code, name)
+            SELECT DISTINCT user_type_id, 'legacy_' || user_type_id, 'Legacy ' || user_type_id FROM app_user
+            WHERE user_type_id NOT IN (SELECT id FROM user_type);
+            ALTER TABLE app_user ADD CONSTRAINT fk_app_user_user_type FOREIGN KEY (user_type_id) REFERENCES user_type(id) ON DELETE RESTRICT;
+
+            CREATE TABLE chat_session_status (id smallint PRIMARY KEY, code varchar(30) NOT NULL UNIQUE, name varchar(100) NOT NULL);
+            INSERT INTO chat_session_status VALUES (1, 'active', 'Active'), (2, 'closed', 'Closed');
+            ALTER TABLE chat_session ADD COLUMN status_id smallint;
+            UPDATE chat_session SET status_id = s.id FROM chat_session_status s WHERE s.code = chat_session.status;
+            ALTER TABLE chat_session ALTER COLUMN status_id SET NOT NULL, ALTER COLUMN status_id SET DEFAULT 1;
+            ALTER TABLE chat_session ADD CONSTRAINT fk_chat_session_status FOREIGN KEY (status_id) REFERENCES chat_session_status(id) ON DELETE RESTRICT;
+            ALTER TABLE chat_session DROP CONSTRAINT ck_chat_session_status, DROP COLUMN status;
+
+            CREATE TABLE ticket_status (id smallint PRIMARY KEY, code varchar(30) NOT NULL UNIQUE, name varchar(100) NOT NULL);
+            INSERT INTO ticket_status VALUES (1, 'open', 'Open'), (2, 'in_progress', 'In progress'), (3, 'resolved', 'Resolved'), (4, 'closed', 'Closed');
+            CREATE TABLE ticket_priority (id smallint PRIMARY KEY, code varchar(30) NOT NULL UNIQUE, name varchar(100) NOT NULL, sort_order smallint NOT NULL UNIQUE);
+            INSERT INTO ticket_priority VALUES (1, 'low', 'Low', 1), (2, 'normal', 'Normal', 2), (3, 'high', 'High', 3), (4, 'urgent', 'Urgent', 4);
+            ALTER TABLE ticket ADD COLUMN status_id smallint, ADD COLUMN priority_id smallint;
+            UPDATE ticket SET status_id = s.id FROM ticket_status s WHERE s.code = ticket.status;
+            UPDATE ticket SET priority_id = p.id FROM ticket_priority p WHERE p.code = ticket.priority;
+            ALTER TABLE ticket ALTER COLUMN status_id SET NOT NULL, ALTER COLUMN status_id SET DEFAULT 1, ALTER COLUMN priority_id SET NOT NULL, ALTER COLUMN priority_id SET DEFAULT 2;
+            ALTER TABLE ticket ADD CONSTRAINT fk_ticket_status FOREIGN KEY (status_id) REFERENCES ticket_status(id) ON DELETE RESTRICT;
+            ALTER TABLE ticket ADD CONSTRAINT fk_ticket_priority FOREIGN KEY (priority_id) REFERENCES ticket_priority(id) ON DELETE RESTRICT;
+            DROP INDEX ix_ticket_status;
+            ALTER TABLE ticket DROP CONSTRAINT ck_ticket_status, DROP CONSTRAINT ck_ticket_priority, DROP COLUMN status, DROP COLUMN priority;
+            CREATE INDEX ix_ticket_status_id ON ticket(status_id);
+            CREATE INDEX ix_ticket_priority_id ON ticket(priority_id);
+
+            CREATE TABLE knowledge_status (id smallint PRIMARY KEY, code varchar(30) NOT NULL UNIQUE, name varchar(100) NOT NULL);
+            INSERT INTO knowledge_status VALUES (1, 'draft', 'Draft'), (2, 'published', 'Published'), (3, 'archived', 'Archived');
+            CREATE TABLE knowledge_category (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), name varchar(100) NOT NULL UNIQUE);
+            INSERT INTO knowledge_category (name) SELECT DISTINCT category FROM knowledge WHERE category IS NOT NULL AND btrim(category) <> '';
+            ALTER TABLE knowledge ADD COLUMN status_id smallint, ADD COLUMN category_id uuid;
+            UPDATE knowledge SET status_id = s.id FROM knowledge_status s WHERE s.code = knowledge.status;
+            UPDATE knowledge SET category_id = c.id FROM knowledge_category c WHERE c.name = knowledge.category;
+            ALTER TABLE knowledge ALTER COLUMN status_id SET NOT NULL, ALTER COLUMN status_id SET DEFAULT 1;
+            ALTER TABLE knowledge ADD CONSTRAINT fk_knowledge_status FOREIGN KEY (status_id) REFERENCES knowledge_status(id) ON DELETE RESTRICT;
+            ALTER TABLE knowledge ADD CONSTRAINT fk_knowledge_category FOREIGN KEY (category_id) REFERENCES knowledge_category(id) ON DELETE SET NULL;
+            DROP INDEX ix_knowledge_status;
+            DROP INDEX ix_knowledge_category;
+            ALTER TABLE knowledge DROP CONSTRAINT ck_knowledge_status, DROP COLUMN status, DROP COLUMN category;
+            CREATE INDEX ix_knowledge_status_id ON knowledge(status_id);
+            CREATE INDEX ix_knowledge_category_id ON knowledge(category_id);
             """;
     }
 }
