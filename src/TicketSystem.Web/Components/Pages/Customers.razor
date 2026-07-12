@@ -2,7 +2,54 @@
 
 <PageTitle>Users | Ticket System</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="pa-6">
-    <MudText Typo="Typo.h5">Users</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary">Users will appear when data is connected.</MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="user-list-page">
+    <header class="user-list-heading">
+        <div>
+            <MudText Typo="Typo.overline" Class="user-list-eyebrow">Administration / Users</MudText>
+            <MudText Typo="Typo.h4" Class="user-list-title">Users</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Outlined.PersonAdd"
+                   Disabled="true"
+                   Class="user-create-button">
+            New user
+        </MudButton>
+    </header>
+
+    <section class="user-list-toolbar" aria-label="User search and filters">
+        <div class="user-list-search">
+            <MudIcon Icon="@Icons.Material.Outlined.Search" Size="Size.Small" />
+            <MudTextField T="string"
+                          Placeholder="Search users..."
+                          Variant="Variant.Text"
+                          Margin="Margin.Dense"
+                          Class="user-search-field"
+                          Disabled="true" />
+        </div>
+        <div class="user-list-filters">
+            <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true">Role: All</MudButton>
+            <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true">Type: All</MudButton>
+            <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true">Status: All</MudButton>
+            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.FilterList" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true">More filters</MudButton>
+        </div>
+    </section>
+
+    <section class="user-table-shell" aria-label="User list">
+        <div class="user-table-header" role="row">
+            <span>ID</span>
+            <span>User / Email</span>
+            <span>Role</span>
+            <span>Type</span>
+            <span>Created</span>
+            <span>Status</span>
+            <span>Actions</span>
+        </div>
+        <div class="user-table-empty">
+            <span class="user-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.PeopleOutline" /></span>
+            <MudText Typo="Typo.subtitle1">No users yet</MudText>
+            <MudText Typo="Typo.body2">Users will appear here when data is connected.</MudText>
+            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.PersonAdd" Disabled="true">Add a user</MudButton>
+        </div>
+    </section>
 </MudContainer>
