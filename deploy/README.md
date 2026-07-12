@@ -32,6 +32,10 @@ Default endpoints:
 - SignalR hub: `http://localhost:8082/hubs/chat`
 - PostgreSQL: `localhost:5432`
 
+The PostgreSQL host connection uses the values from `deploy/.env`. For example,
+connect to `localhost` on `POSTGRES_PORT` with `POSTGRES_DATABASE`,
+`POSTGRES_USER`, and `POSTGRES_PASSWORD` from that file.
+
 The API waits for PostgreSQL to become healthy and then applies pending database migrations automatically.
 
 ## Operations
