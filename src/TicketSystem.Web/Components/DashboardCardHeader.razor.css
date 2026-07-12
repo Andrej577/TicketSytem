@@ -4,5 +4,5 @@
     justify-content: space-between;
     min-height: 64px;
     padding: 14px 14px 10px;
-    border-bottom: 1px solid #203b37;
+    border-bottom: 1px solid var(--mud-palette-divider);
 }

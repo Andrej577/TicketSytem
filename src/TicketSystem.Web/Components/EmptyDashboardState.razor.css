@@ -6,6 +6,6 @@
     justify-content: center;
     gap: 12px;
     padding: 28px;
-    color: #45645f;
+    color: var(--mud-palette-text-secondary);
     text-align: center;
 }

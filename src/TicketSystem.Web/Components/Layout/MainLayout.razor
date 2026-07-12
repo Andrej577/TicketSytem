@@ -1,6 +1,6 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="DashboardTheme" IsDarkMode="true" />
+<MudThemeProvider Theme="TicketSystemTheme.Default" IsDarkMode="true" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -35,30 +35,6 @@
         @Body
     </MudMainContent>
 </MudLayout>
-
-@code {
-    private static readonly MudTheme DashboardTheme = new()
-    {
-        PaletteDark = new PaletteDark
-        {
-            Primary = "#16d6aa",
-            Secondary = "#36c8dd",
-            Background = "#071210",
-            Surface = "#0d1c1a",
-            AppbarBackground = "#111723",
-            AppbarText = "#e8f2f0",
-            TextPrimary = "#e8f2f0",
-            TextSecondary = "#819a96",
-            Divider = "#203936",
-            ActionDefault = "#91aaa6",
-            ActionDisabled = "#536763"
-        },
-        LayoutProperties = new LayoutProperties
-        {
-            DefaultBorderRadius = "8px"
-        }
-    };
-}
 
 <div id="blazor-error-ui">
     An unexpected error occurred.
