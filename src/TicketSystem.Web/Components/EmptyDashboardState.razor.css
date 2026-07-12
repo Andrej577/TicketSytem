@@ -1,0 +1,11 @@
+.dashboard-empty-state {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 28px;
+    color: #45645f;
+    text-align: center;
+}

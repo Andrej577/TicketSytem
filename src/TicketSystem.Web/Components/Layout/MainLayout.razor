@@ -1,96 +1,67 @@
-﻿@inherits LayoutComponentBase
-@implements IDisposable
-@inject NavigationManager NavigationManager
+@inherits LayoutComponentBase
 
-<MudThemeProvider IsDarkMode="_isDarkMode" />
+<MudThemeProvider Theme="DashboardTheme" IsDarkMode="true" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout Class="@($"ticket-layout {ThemeClass}")">
-    <MudAppBar Elevation="0" Dense="true" Class="@($"ticket-appbar {ThemeClass}")">
-        <MudButton Href="/"
-                   Variant="Variant.Text"
-                   Color="Color.Inherit"
-                   Class="ticket-product-tab ticket-product-tab-active">
-            TicketSystem
-        </MudButton>
-        <MudButton Href="/tickets" Variant="Variant.Text" Color="Color.Inherit" Class="ticket-product-tab">Tickets</MudButton>
-        <MudButton Href="/knowledge-base" Variant="Variant.Text" Color="Color.Inherit" Class="ticket-product-tab">KB</MudButton>
-        <MudButton Href="/customers" Variant="Variant.Text" Color="Color.Inherit" Class="ticket-product-tab">Customers</MudButton>
+<MudLayout Class="ticket-layout">
+    <MudAppBar Elevation="0" Class="ticket-appbar">
+        <MudLink Href="/" Underline="Underline.None" Class="ticket-brand">
+            <span class="ticket-logo">T</span>
+            <span class="ticket-brand-copy">
+                <strong>Ticket <span>System</span></strong>
+                <small>SUPPORT</small>
+            </span>
+        </MudLink>
+
+        <nav class="ticket-navigation" aria-label="Main navigation">
+            <NavLink href="/" Match="NavLinkMatch.All" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.Dashboard" />Overview</NavLink>
+            <NavLink href="/tickets" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.Inbox" />Inbox</NavLink>
+            <NavLink href="/tickets/new" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.Add" />New ticket</NavLink>
+            <NavLink href="/customers" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.People" />Users</NavLink>
+            <NavLink href="/knowledge-base" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.MenuBook" />Knowledge base</NavLink>
+            <NavLink href="/technicians" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.Engineering" />Technicians</NavLink>
+        </nav>
 
         <MudSpacer />
 
-        <MudIconButton Icon="@ThemeIcon"
-                       Color="Color.Inherit"
-                       Class="ticket-theme-toggle"
-                       OnClick="ToggleTheme" />
+        <MudIconButton Icon="@Icons.Material.Outlined.Search" Class="ticket-header-action" aria-label="Search" />
+        <MudIconButton Icon="@Icons.Material.Outlined.NotificationsNone" Class="ticket-header-action" aria-label="Notifications" />
+        <MudAvatar Class="ticket-user-placeholder"><MudIcon Icon="@Icons.Material.Outlined.Person" /></MudAvatar>
     </MudAppBar>
 
-    @if (ShouldShowDrawer)
-    {
-        <MudDrawer @bind-Open="_drawerOpen"
-                   Variant="DrawerVariant.Persistent"
-                   Elevation="0"
-                   Class="ticket-drawer" />
-    }
-
-    <MudMainContent Class="@($"ticket-main {MainContentClass}")">
+    <MudMainContent Class="ticket-main">
         @Body
     </MudMainContent>
 </MudLayout>
 
 @code {
-    private bool _isDarkMode = true;
-    private bool _drawerOpen = true;
-
-    private string ThemeClass => _isDarkMode ? "ticket-theme-dark" : "ticket-theme-light";
-
-    private string ThemeIcon => _isDarkMode
-        ? Icons.Material.Outlined.LightMode
-        : Icons.Material.Outlined.DarkMode;
-
-    private bool ShouldShowDrawer => !IsHomePage();
-
-    private string MainContentClass => ShouldShowDrawer ? "ticket-main-with-drawer" : "ticket-main-full";
-
-    protected override void OnInitialized()
+    private static readonly MudTheme DashboardTheme = new()
     {
-        NavigationManager.LocationChanged += OnLocationChanged;
-    }
-
-    private void ToggleTheme()
-    {
-        _isDarkMode = !_isDarkMode;
-    }
-
-    private void ToggleDrawer()
-    {
-        _drawerOpen = !_drawerOpen;
-    }
-
-    private bool IsHomePage()
-    {
-        var relativePath = NavigationManager
-            .ToBaseRelativePath(NavigationManager.Uri)
-            .Split(['?', '#'], 2)[0];
-
-        return string.IsNullOrEmpty(relativePath);
-    }
-
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
-    {
-        StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        NavigationManager.LocationChanged -= OnLocationChanged;
-    }
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#16d6aa",
+            Secondary = "#36c8dd",
+            Background = "#071210",
+            Surface = "#0d1c1a",
+            AppbarBackground = "#111723",
+            AppbarText = "#e8f2f0",
+            TextPrimary = "#e8f2f0",
+            TextSecondary = "#819a96",
+            Divider = "#203936",
+            ActionDefault = "#91aaa6",
+            ActionDisabled = "#536763"
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "8px"
+        }
+    };
 }
 
 <div id="blazor-error-ui">
-    An unhandled error has occurred.
+    An unexpected error occurred.
     <a href="" class="reload">Reload</a>
-    <a class="dismiss">x</a>
+    <a class="dismiss">×</a>
 </div>

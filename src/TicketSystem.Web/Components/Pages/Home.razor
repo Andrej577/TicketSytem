@@ -1,3 +1,51 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>TicketSystem</PageTitle>
+<PageTitle>Ticket System</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="dashboard-page">
+    <section class="dashboard-toolbar" aria-label="Dashboard filters">
+        <MudText Typo="Typo.overline">Filters</MudText>
+        <MudSelect T="string" Label="Organization" Variant="Variant.Outlined" Dense="true" Class="dashboard-filter" Disabled="true" />
+        <MudSelect T="string" Label="Category" Variant="Variant.Outlined" Dense="true" Class="dashboard-filter" Disabled="true" />
+        <MudIconButton Icon="@Icons.Material.Outlined.Add" Disabled="true" aria-label="Add filter" />
+        <MudSpacer />
+        <MudText Typo="Typo.caption" Class="dashboard-period"><MudIcon Icon="@Icons.Material.Outlined.Schedule" Size="Size.Small" /> No period selected</MudText>
+    </section>
+
+    <section class="dashboard-search">
+        <MudIcon Icon="@Icons.Material.Outlined.FilterList" />
+        <MudTextField T="string" Placeholder="Search by title, user, or tag…" Variant="Variant.Text" Margin="Margin.Dense" Disabled="true" />
+    </section>
+
+    <div class="dashboard-grid">
+        <MudPaper Elevation="0" Class="dashboard-card dashboard-card-wide">
+            <DashboardCardHeader Title="Recent activity" Subtitle="Activity will appear when data is connected" />
+            <EmptyDashboardState Icon="@Icons.Material.Outlined.History" Text="No activity available" />
+        </MudPaper>
+
+        <MudPaper Elevation="0" Class="dashboard-card">
+            <DashboardCardHeader Title="Most active categories" Subtitle="Ticket category overview" />
+            <EmptyDashboardState Icon="@Icons.Material.Outlined.DonutLarge" Text="No category data available" />
+        </MudPaper>
+
+        <MudPaper Elevation="0" Class="dashboard-card">
+            <DashboardCardHeader Title="First response time" Subtitle="Response time trend" />
+            <EmptyDashboardState Icon="@Icons.Material.Outlined.ShowChart" Text="No response data available" />
+        </MudPaper>
+
+        <MudPaper Elevation="0" Class="dashboard-card dashboard-card-wide">
+            <DashboardCardHeader Title="Tickets by location" Subtitle="Ticket distribution" />
+            <EmptyDashboardState Icon="@Icons.Material.Outlined.LocationOn" Text="No location data available" />
+        </MudPaper>
+
+        <MudPaper Elevation="0" Class="dashboard-card">
+            <DashboardCardHeader Title="Ticket overview" Subtitle="Statuses and priorities" />
+            <EmptyDashboardState Icon="@Icons.Material.Outlined.ConfirmationNumber" Text="No tickets available" />
+        </MudPaper>
+
+        <MudPaper Elevation="0" Class="dashboard-card">
+            <DashboardCardHeader Title="Summary" Subtitle="Key indicators" />
+            <EmptyDashboardState Icon="@Icons.Material.Outlined.QueryStats" Text="No indicators available" />
+        </MudPaper>
+    </div>
+</MudContainer>

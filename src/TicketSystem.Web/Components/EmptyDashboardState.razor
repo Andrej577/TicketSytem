@@ -1,0 +1,12 @@
+<div class="dashboard-empty-state">
+    <MudIcon Icon="@Icon" Size="Size.Large" />
+    <MudText Typo="Typo.body2">@Text</MudText>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Icon { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+}

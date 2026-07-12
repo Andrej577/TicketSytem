@@ -1,10 +1,12 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    min-height: 100%;
+    margin: 0;
+    background: #071210;
+    color: #e8f2f0;
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
 }
 
-a, .btn-link {
-    color: #006bb7;
-}
+a, .btn-link { color: #22d3ad; }
 
 .btn-primary {
     color: #fff;
@@ -48,4 +50,60 @@ h1:focus {
 
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
+}
+
+/* Global application shell styles. MudBlazor renders nested elements outside
+   component CSS scope boundaries, so shell and dashboard styling lives here. */
+.ticket-layout { min-height: 100vh; background: #071210; color: #e8f2f0; }
+.ticket-appbar { height: 76px !important; padding: 0 26px !important; border-top: 3px solid #28302f; border-bottom: 1px solid #20302f; background: #101722 !important; color: #e8f2f0 !important; box-shadow: 0 8px 24px rgba(0,0,0,.18) !important; }
+.ticket-appbar .mud-toolbar { display: flex !important; width: 100%; height: 73px !important; min-height: 73px !important; flex-wrap: nowrap !important; gap: 12px; }
+.ticket-brand { display: flex !important; align-items: center; gap: 11px; min-width: 190px; padding-right: 18px; border-right: 1px solid #263431; color: #e8f2f0 !important; text-decoration: none !important; }
+.ticket-logo { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 9px; background: linear-gradient(145deg,#16d6aa,#05a981); color: white; font-weight: 900; }
+.ticket-brand-copy { display: flex; flex-direction: column; line-height: 1.05; }
+.ticket-brand-copy strong { color: #f1f7f5; font-size: .98rem; font-weight: 750; white-space: nowrap; }
+.ticket-brand-copy strong span { color: #25d1b0; }
+.ticket-brand-copy small { margin-top: 5px; color: #718682; font-size: .52rem; letter-spacing: .18em; }
+.ticket-navigation { display: flex !important; align-self: stretch; min-width: 0; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.ticket-navigation::-webkit-scrollbar { display: none; }
+.ticket-nav-link { position: relative; display: inline-flex !important; min-width: max-content; height: 73px; padding: 0 14px; align-items: center; gap: 8px; border-radius: 7px 7px 0 0; color: #91a4a1 !important; font-size: .8rem; font-weight: 650; line-height: 1; text-decoration: none !important; white-space: nowrap; }
+.ticket-nav-link:hover { background: rgba(22,214,170,.06); color: #dceae7; }
+.ticket-nav-link.active { background: linear-gradient(180deg,rgba(22,214,170,.02),rgba(22,214,170,.08)); color: #22d3ad !important; }
+.ticket-nav-link.active::after { position: absolute; right: 12px; bottom: 0; left: 12px; height: 2px; background: #16d6aa; content: ""; }
+.ticket-nav-link .mud-icon-root { color: inherit !important; font-size: 1.15rem; }
+.ticket-header-action { flex: 0 0 auto; margin-left: 4px; border: 1px solid #27333e !important; border-radius: 8px !important; color: #9caeb4 !important; }
+.ticket-user-placeholder { width: 36px !important; height: 36px !important; flex: 0 0 36px; margin-left: 6px; background: #16312d !important; color: #21d1ac !important; }
+.ticket-main { min-height: 100vh; padding-top: 76px !important; background: #071210; }
+.dashboard-page { min-height: calc(100vh - 76px); padding: 16px !important; background: #071210; }
+.dashboard-toolbar,.dashboard-search { display: flex; align-items: center; gap: 10px; min-height: 58px; margin-bottom: 12px; padding: 10px 14px; border: 1px solid #18312d; border-radius: 8px; background: #0b1b19; }
+.dashboard-toolbar .mud-typography-overline { color: #698681; letter-spacing: .12em; }
+.dashboard-filter { width: 155px; }
+.dashboard-filter .mud-input-outlined-border { border-color: #1a8f78 !important; }
+.dashboard-period { display: flex; align-items: center; gap: 6px; color: #75908b; }
+.dashboard-search { min-height: 54px; color: #607a76; }
+.dashboard-search .mud-input-control { flex: 1; }
+.dashboard-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.dashboard-card { display: flex !important; min-height: 280px; flex-direction: column; border: 1px solid #203b37; border-radius: 8px !important; background: #0d1d1b !important; overflow: hidden; }
+.dashboard-card-header { display: flex; align-items: flex-start; justify-content: space-between; min-height: 64px; padding: 14px; border-bottom: 1px solid #203b37; }
+.dashboard-card-header .mud-typography-subtitle2 { color: #dceae7; font-weight: 700; }
+.dashboard-card-header .mud-typography-caption { color: #6e8c87; }
+.dashboard-empty-state { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 28px; color: #55746e; text-align: center; }
+.dashboard-empty-state .mud-icon-root { color: #28534c; font-size: 2.5rem; }
+
+@media (max-width:1100px) {
+    .ticket-nav-link { padding: 0 9px; }
+    .ticket-nav-link .mud-icon-root { display: none; }
+    .dashboard-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:760px) {
+    .ticket-appbar { height: 116px !important; padding: 8px 12px 0 !important; }
+    .ticket-appbar .mud-toolbar { height: 108px; min-height: 108px; flex-wrap: wrap; align-content: space-between; }
+    .ticket-brand { height: 44px; }
+    .ticket-navigation { order: 10; width: 100%; height: 56px; }
+    .ticket-nav-link { height: 56px; }
+    .ticket-main { padding-top: 116px !important; }
+    .dashboard-page { padding: 10px !important; }
+    .dashboard-toolbar { align-items: stretch; flex-wrap: wrap; }
+    .dashboard-filter { width: calc(50% - 24px); }
+    .dashboard-period { width: 100%; }
+    .dashboard-grid { grid-template-columns: 1fr; }
 }

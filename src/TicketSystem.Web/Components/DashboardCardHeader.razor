@@ -1,0 +1,15 @@
+<header class="dashboard-card-header">
+    <div>
+        <MudText Typo="Typo.subtitle2">@Title</MudText>
+        <MudText Typo="Typo.caption">@Subtitle</MudText>
+    </div>
+    <MudIconButton Icon="@Icons.Material.Outlined.MoreHoriz" Size="Size.Small" Disabled="true" aria-label="More options" />
+</header>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Subtitle { get; set; } = string.Empty;
+}
