@@ -4,11 +4,12 @@ namespace TicketSystem.Api.Features.UpdateDatabase;
 
 public static class DatabaseMigrations
 {
-    public static int DatabaseVersion { get; } = 1;
+    public static int DatabaseVersion { get; } = 2;
 
     public static IReadOnlyList<DatabaseMigration> All { get; } =
     [
-        new(1, CreateInitialTables())
+        new(1, CreateInitialTables()),
+        new(2, CreateKnowledgeTable())
     ];
 
     private static string CreateInitialTables()
@@ -122,6 +123,28 @@ public static class DatabaseMigrations
             CREATE INDEX IF NOT EXISTS ix_message_ticket_id_sent_at ON message(ticket_id, sent_at);
             CREATE INDEX IF NOT EXISTS ix_message_sender_id ON message(sender_id);
             CREATE INDEX IF NOT EXISTS ix_message_read_user_id ON message_read(user_id);
+            """;
+    }
+
+    private static string CreateKnowledgeTable()
+    {
+        return """
+            CREATE TABLE IF NOT EXISTS knowledge (
+                id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                title varchar(200) NOT NULL,
+                content text NOT NULL,
+                category varchar(100),
+                status varchar(30) NOT NULL DEFAULT 'draft',
+                author_id uuid NOT NULL REFERENCES app_user(id) ON DELETE RESTRICT,
+                created_at timestamp with time zone NOT NULL DEFAULT now(),
+                updated_at timestamp with time zone NOT NULL DEFAULT now(),
+                published_at timestamp with time zone,
+                CONSTRAINT ck_knowledge_status CHECK (status IN ('draft', 'published', 'archived'))
+            );
+
+            CREATE INDEX IF NOT EXISTS ix_knowledge_status ON knowledge(status);
+            CREATE INDEX IF NOT EXISTS ix_knowledge_category ON knowledge(category);
+            CREATE INDEX IF NOT EXISTS ix_knowledge_author_id ON knowledge(author_id);
             """;
     }
 }

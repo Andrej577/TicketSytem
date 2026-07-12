@@ -51,6 +51,20 @@ CREATE TABLE message_read (
     read_at timestamp with time zone NOT NULL DEFAULT now(),
     PRIMARY KEY (message_id, user_id)
 );
+CREATE TABLE knowledge (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    title varchar(200) NOT NULL,
+    content text NOT NULL,
+    category varchar(100),
+    status varchar(30) NOT NULL DEFAULT 'draft',
+    author_id uuid NOT NULL REFERENCES app_user(id) ON DELETE RESTRICT,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    updated_at timestamp with time zone NOT NULL DEFAULT now(),
+    published_at timestamp with time zone,
+    CONSTRAINT ck_knowledge_status CHECK (
+        status IN ('draft', 'published', 'archived')
+    )
+);
 CREATE INDEX ix_chat_session_customer_id ON chat_session(customer_id);
 CREATE INDEX ix_chat_session_operator_id ON chat_session(operator_id);
 CREATE INDEX ix_ticket_chat_session_id ON ticket(chat_session_id);
@@ -61,3 +75,6 @@ CREATE INDEX ix_message_chat_session_id_sent_at ON message(chat_session_id, sent
 CREATE INDEX ix_message_ticket_id_sent_at ON message(ticket_id, sent_at);
 CREATE INDEX ix_message_sender_id ON message(sender_id);
 CREATE INDEX ix_message_read_user_id ON message_read(user_id);
+CREATE INDEX ix_knowledge_status ON knowledge(status);
+CREATE INDEX ix_knowledge_category ON knowledge(category);
+CREATE INDEX ix_knowledge_author_id ON knowledge(author_id);
