@@ -10,6 +10,7 @@
     justify-content: space-between;
     gap: 24px;
     margin-bottom: 24px;
+    margin-top: 24px;
 }
 
 ::deep .ticket-list-eyebrow {
@@ -30,7 +31,6 @@
 ::deep .ticket-create-button {
     min-height: 42px;
     padding: 0 19px;
-    border-radius: 12px;
     background: var(--mud-palette-primary);
     color: var(--mud-palette-primary-text);
     font-weight: 750;
@@ -45,7 +45,7 @@
     margin-bottom: 16px;
     padding: 10px 14px 10px 22px;
     border: 1px solid var(--mud-palette-divider);
-    border-radius: 20px;
+    border-radius: 0;
     background: var(--mud-palette-surface);
 }
 
@@ -66,7 +66,7 @@
     min-height: 36px;
     padding: 0 12px;
     border-color: var(--mud-palette-divider);
-    border-radius: 11px;
+    border-radius: 0;
     color: var(--mud-palette-action-default);
     font-size: .72rem;
     text-transform: none;
@@ -76,7 +76,7 @@
 .ticket-table-shell {
     min-height: 430px;
     border: 1px solid var(--mud-palette-divider);
-    border-radius: 20px;
+    border-radius: 0;
     background: var(--mud-palette-surface);
     overflow: hidden;
 }
@@ -115,7 +115,7 @@
     margin-bottom: 8px;
     place-items: center;
     border: 1px solid var(--mud-palette-divider);
-    border-radius: 17px;
+    border-radius: 0;
     background: var(--mud-palette-action-disabled-background);
     color: var(--mud-palette-primary);
 }
