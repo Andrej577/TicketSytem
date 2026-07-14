@@ -6,6 +6,14 @@ html, body {
     font-family: Inter, "Segoe UI", Arial, sans-serif;
 }
 
+/* Ticket System uses a squared visual language across all components,
+   including hover, focus, ripple, popover, dialog, and menu layers. */
+*,
+*::before,
+*::after {
+    border-radius: 0 !important;
+}
+
 a, .btn-link { color: var(--mud-palette-primary); }
 
 .btn-primary {
@@ -55,7 +63,7 @@ h1:focus {
 /* Global application shell styles. MudBlazor renders nested elements outside
    component CSS scope boundaries, so shell and dashboard styling lives here. */
 .ticket-layout { min-height: 100vh; background: var(--mud-palette-background); color: var(--mud-palette-text-primary); }
-.ticket-appbar { height: 76px !important; padding: 0 26px !important; border-top: 3px solid var(--mud-palette-divider); border-bottom: 1px solid var(--mud-palette-divider); background: var(--mud-palette-appbar-background) !important; color: var(--mud-palette-appbar-text) !important; box-shadow: var(--mud-elevation-4) !important; }
+.ticket-appbar { height: 76px !important; padding: 0 20px !important; border-top: 3px solid var(--mud-palette-divider); border-bottom: 1px solid var(--mud-palette-divider); background: var(--mud-palette-appbar-background) !important; color: var(--mud-palette-appbar-text) !important; box-shadow: var(--mud-elevation-4) !important; }
 .ticket-appbar .mud-toolbar { display: flex !important; width: 100%; height: 73px !important; min-height: 73px !important; flex-wrap: nowrap !important; gap: 12px; }
 .ticket-brand { display: flex !important; align-items: center; gap: 11px; min-width: 190px; padding-right: 18px; border-right: 1px solid var(--mud-palette-divider); color: var(--mud-palette-text-primary) !important; text-decoration: none !important; }
 .ticket-logo { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 9px; background: var(--mud-palette-primary); color: var(--mud-palette-primary-text); font-weight: 900; }
@@ -70,7 +78,7 @@ h1:focus {
 .ticket-nav-link.active { background: var(--mud-palette-action-default-hover); color: var(--mud-palette-primary) !important; }
 .ticket-nav-link.active::after { position: absolute; right: 12px; bottom: 0; left: 12px; height: 2px; background: var(--mud-palette-primary); content: ""; }
 .ticket-nav-link .mud-icon-root { color: inherit !important; font-size: 1.15rem; }
-.ticket-header-action { flex: 0 0 auto; margin-left: 4px; border: 1px solid var(--mud-palette-divider) !important; border-radius: 8px !important; color: var(--mud-palette-action-default) !important; }
+.ticket-header-action { flex: 0 0 auto; margin-left: 4px; border: 1px solid var(--mud-palette-divider) !important; border-radius: 0 !important; color: var(--mud-palette-action-default) !important; }
 .ticket-user-placeholder { width: 36px !important; height: 36px !important; flex: 0 0 36px; margin-left: 6px; background: var(--mud-palette-action-disabled-background) !important; color: var(--mud-palette-primary) !important; }
 .ticket-main { min-height: 100vh; padding-top: 76px !important; background: var(--mud-palette-background); }
 .dashboard-page { min-height: calc(100vh - 76px); padding: 16px !important; background: var(--mud-palette-background); }

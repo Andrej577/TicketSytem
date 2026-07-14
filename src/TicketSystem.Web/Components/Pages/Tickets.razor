@@ -48,7 +48,13 @@
             <span class="ticket-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.Inbox" /></span>
             <MudText Typo="Typo.subtitle1">No tickets yet</MudText>
             <MudText Typo="Typo.body2">Tickets will appear here when data is connected.</MudText>
-            <MudButton Href="/tickets/new" Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Add">Create a ticket</MudButton>
+            <MudButton Href="/tickets/new"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Outlined.Add"
+                       Class="ticket-empty-create-button">
+                Create a ticket
+            </MudButton>
         </div>
     </section>
 </MudContainer>

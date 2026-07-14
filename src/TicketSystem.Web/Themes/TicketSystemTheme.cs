@@ -29,7 +29,7 @@ public static class TicketSystemTheme
         },
         LayoutProperties = new LayoutProperties
         {
-            DefaultBorderRadius = "8px"
+            DefaultBorderRadius = "0px"
         }
     };
 }
