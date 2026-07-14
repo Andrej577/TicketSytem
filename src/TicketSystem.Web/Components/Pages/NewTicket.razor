@@ -2,7 +2,104 @@
 
 <PageTitle>New ticket | Ticket System</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="pa-6">
-    <MudText Typo="Typo.h5">New ticket</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary">The form will become available when the required data is connected.</MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="new-ticket-page">
+    <header class="new-ticket-heading">
+        <MudText Typo="Typo.overline" Class="new-ticket-eyebrow">New work order</MudText>
+        <MudText Typo="Typo.h4" Class="new-ticket-title">Open a new ticket</MudText>
+        <MudText Typo="Typo.body1" Class="new-ticket-lead">Report an incident or request in a few clear steps.</MudText>
+    </header>
+
+    <div class="new-ticket-layout">
+        <MudPaper Elevation="0" Class="new-ticket-form-card">
+            <MudForm @ref="ticketForm">
+                <div class="new-ticket-field">
+                    <MudText Typo="Typo.subtitle2">Ticket title</MudText>
+                    <MudTextField @bind-Value="ticketTitle"
+                                  Placeholder="Briefly describe the issue"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  FullWidth="true"
+                                  MaxLength="200"
+                                  Counter="200" />
+                </div>
+
+                <div class="new-ticket-field-row">
+                    <div class="new-ticket-field">
+                        <MudText Typo="Typo.subtitle2">Category</MudText>
+                        <MudSelect T="Guid?"
+                                   @bind-Value="categoryId"
+                                   Placeholder="Select a category"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   FullWidth="true"
+                                   Disabled="true" />
+                        <MudText Typo="Typo.caption">Categories will be available when API data is connected.</MudText>
+                    </div>
+                    <div class="new-ticket-field">
+                        <MudText Typo="Typo.subtitle2">Priority</MudText>
+                        <MudSelect T="short?"
+                                   @bind-Value="priorityId"
+                                   Placeholder="Select a priority"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   FullWidth="true"
+                                   Disabled="true" />
+                        <MudText Typo="Typo.caption">Priorities will be available when API data is connected.</MudText>
+                    </div>
+                </div>
+
+                <div class="new-ticket-field">
+                    <MudText Typo="Typo.subtitle2">Issue description</MudText>
+                    <MudTextField @bind-Value="description"
+                                  Placeholder="What happened? When did you first notice the issue?"
+                                  Variant="Variant.Outlined"
+                                  Lines="7"
+                                  FullWidth="true"
+                                  MaxLength="4000"
+                                  Counter="4000" />
+                </div>
+
+                <button type="button" class="new-ticket-attachment" disabled>
+                    <MudIcon Icon="@Icons.Material.Outlined.AttachFile" />
+                    <span><strong>Add an attachment</strong><small>PNG, JPG, PDF, or LOG up to 10 MB</small></span>
+                </button>
+
+                <div class="new-ticket-actions">
+                    <MudButton Variant="Variant.Text" Disabled="true">Save draft</MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               EndIcon="@Icons.Material.Outlined.ArrowForward"
+                               Disabled="true"
+                               Class="new-ticket-submit">
+                        Submit ticket
+                    </MudButton>
+                </div>
+            </MudForm>
+        </MudPaper>
+
+        <MudPaper Elevation="0" Class="new-ticket-help-card">
+            <span class="new-ticket-help-icon"><MudIcon Icon="@Icons.Material.Outlined.Schedule" /></span>
+            <MudText Typo="Typo.h6">A clear request gets a faster response.</MudText>
+            <MudText Typo="Typo.body2">The more context you provide, the easier it is for the support team to understand the issue.</MudText>
+
+            <ol class="new-ticket-steps">
+                <li><span>01</span><strong>Describe what happened</strong></li>
+                <li><span>02</span><strong>Add a screenshot or file</strong></li>
+                <li><span>03</span><strong>Track replies in your portal</strong></li>
+            </ol>
+
+            <div class="new-ticket-help-note">
+                <MudIcon Icon="@Icons.Material.Outlined.Info" Size="Size.Small" />
+                <MudText Typo="Typo.caption">Submission will be enabled when the ticket API is connected.</MudText>
+            </div>
+        </MudPaper>
+    </div>
 </MudContainer>
+
+@code {
+    private MudForm? ticketForm;
+    private string ticketTitle = string.Empty;
+    private string description = string.Empty;
+    private Guid? categoryId;
+    private short? priorityId;
+}
