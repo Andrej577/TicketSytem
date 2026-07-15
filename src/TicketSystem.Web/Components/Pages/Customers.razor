@@ -1,4 +1,5 @@
 @page "/customers"
+@inject IDialogService DialogService
 
 <PageTitle>Users | Ticket System</PageTitle>
 
@@ -10,9 +11,9 @@
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Outlined.PersonAdd"
-                   Disabled="true"
+                   OnClick="OpenCreateCustomerDialogAsync"
                    Class="user-create-button">
-            New user
+            New customer
         </MudButton>
     </header>
 
@@ -48,7 +49,22 @@
             <span class="user-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.PeopleOutline" /></span>
             <MudText Typo="Typo.subtitle1">No users yet</MudText>
             <MudText Typo="Typo.body2">Users will appear here when data is connected.</MudText>
-            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.PersonAdd" Disabled="true">Add a user</MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.PersonAdd" OnClick="OpenCreateCustomerDialogAsync">Add a customer</MudButton>
         </div>
     </section>
 </MudContainer>
+
+@code {
+    private async Task OpenCreateCustomerDialogAsync()
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            FullWidth = true,
+            MaxWidth = MaxWidth.Small,
+            BackdropClick = false
+        };
+
+        await DialogService.ShowAsync<CreateCustomerDialog>("New customer", options);
+    }
+}

@@ -1,0 +1,49 @@
+.customer-dialog-intro {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.customer-dialog-icon {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    place-items: center;
+    border: 1px solid var(--mud-palette-divider);
+    background: var(--mud-palette-action-disabled-background);
+    color: var(--mud-palette-primary);
+}
+
+::deep .customer-dialog-intro .mud-typography-subtitle1 {
+    color: var(--mud-palette-text-primary);
+    font-weight: 700;
+}
+
+::deep .customer-dialog-intro .mud-typography-body2 {
+    color: var(--mud-palette-text-secondary);
+}
+
+.customer-dialog-error {
+    margin-bottom: 18px;
+}
+
+.customer-dialog-form {
+    display: grid;
+    gap: 18px;
+}
+
+::deep .customer-dialog-form .mud-input-outlined-border {
+    border-color: var(--mud-palette-divider);
+}
+
+::deep .customer-dialog-form .mud-input-control:focus-within .mud-input-outlined-border {
+    border-color: var(--mud-palette-primary);
+}
+
+::deep .mud-dialog-actions {
+    gap: 8px;
+    padding: 16px 24px 22px;
+    border-top: 1px solid var(--mud-palette-divider);
+}

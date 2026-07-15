@@ -1,0 +1,181 @@
+@using System.ComponentModel.DataAnnotations
+@using System.Net
+@inject IHttpClientFactory HttpClientFactory
+@inject ISnackbar Snackbar
+
+<MudDialog Class="create-customer-dialog">
+    <DialogContent>
+        <div class="customer-dialog-intro">
+            <span class="customer-dialog-icon">
+                <MudIcon Icon="@Icons.Material.Outlined.PersonAdd" />
+            </span>
+            <div>
+                <MudText Typo="Typo.subtitle1">Create a customer account</MudText>
+                <MudText Typo="Typo.body2">Enter the credentials the customer will use to access the portal.</MudText>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true" Class="customer-dialog-error">
+                @errorMessage
+            </MudAlert>
+        }
+
+        <MudForm @ref="form" Class="customer-dialog-form">
+            <MudTextField T="string"
+                          Label="Email address"
+                          Placeholder="customer@example.com"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          @bind-Value="model.Email"
+                          Validation="@(new Func<string, string?>(ValidateEmail))"
+                          Immediate="true"
+                          Disabled="isSubmitting" />
+
+            <MudTextField T="string"
+                          Label="Password"
+                          Placeholder="Enter a password"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          @bind-Value="model.Password"
+                          Validation="@(new Func<string, string?>(ValidatePassword))"
+                          Immediate="true"
+                          Disabled="isSubmitting" />
+
+            <MudTextField T="string"
+                          Label="Confirm password"
+                          Placeholder="Repeat the password"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          @bind-Value="model.ConfirmPassword"
+                          Validation="@(new Func<string, string?>(ValidatePasswordConfirmation))"
+                          Immediate="true"
+                          Disabled="isSubmitting" />
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Cancel" Disabled="isSubmitting">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="isSubmitting">
+            @if (isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span>Creating...</span>
+            }
+            else
+            {
+                <span>Create customer</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private readonly CustomerFormModel model = new();
+    private MudForm? form;
+    private bool isSubmitting;
+    private string? errorMessage;
+
+    private async Task SubmitAsync()
+    {
+        if (form is null)
+        {
+            return;
+        }
+
+        await form.ValidateAsync();
+        if (!form.IsValid)
+        {
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            var response = await client.PostAsJsonAsync("api/customers", new
+            {
+                Email = model.Email.Trim(),
+                model.Password
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Customer created successfully.", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+                return;
+            }
+
+            errorMessage = response.StatusCode switch
+            {
+                HttpStatusCode.Conflict => "A customer with this email address already exists.",
+                HttpStatusCode.BadRequest => "Please check the entered customer information.",
+                _ => "The customer could not be created. Please try again."
+            };
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "The API is currently unavailable. Please try again later.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private static string? ValidateEmail(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "Email address is required.";
+        }
+
+        return new EmailAddressAttribute().IsValid(value)
+            ? null
+            : "Enter a valid email address.";
+    }
+
+    private static string? ValidatePassword(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "Password is required.";
+        }
+
+        return value.Length >= 8
+            ? null
+            : "Password must contain at least 8 characters.";
+    }
+
+    private string? ValidatePasswordConfirmation(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "Confirm the password.";
+        }
+
+        return value == model.Password
+            ? null
+            : "Passwords do not match.";
+    }
+
+    private sealed class CustomerFormModel
+    {
+        public string Email { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
+
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

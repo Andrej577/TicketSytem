@@ -7,6 +7,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
+builder.Services.AddHttpClient("TicketSystemApi", client =>
+{
+    var baseUrl = builder.Configuration["Api:BaseUrl"]
+        ?? throw new InvalidOperationException("The 'Api:BaseUrl' configuration value is required.");
+
+    client.BaseAddress = new Uri(baseUrl);
+});
 
 var app = builder.Build();
 
