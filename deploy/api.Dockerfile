@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY ["src/TicketSystem.Api/TicketSystem.Api.csproj", "src/TicketSystem.Api/"]
+COPY ["src/TicketSystem.DAL/TicketSystem.DAL.csproj", "src/TicketSystem.DAL/"]
 COPY ["src/TicketSystem.Shared/TicketSystem.Shared.csproj", "src/TicketSystem.Shared/"]
 RUN dotnet restore "src/TicketSystem.Api/TicketSystem.Api.csproj"
 

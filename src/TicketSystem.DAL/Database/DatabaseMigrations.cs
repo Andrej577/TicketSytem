@@ -1,16 +1,19 @@
 using System.Text;
+using TicketSystem.Shared.Enums;
 
-namespace TicketSystem.Api.Features.UpdateDatabase;
+namespace TicketSystem.DAL.Database;
 
 public static class DatabaseMigrations
 {
-    public static int DatabaseVersion { get; } = 3;
+    public static int DatabaseVersion { get; } = 5;
 
     public static IReadOnlyList<DatabaseMigration> All { get; } =
     [
         new(1, CreateInitialTables()),
         new(2, CreateKnowledgeTable()),
-        new(3, NormalizeDatabase())
+        new(3, NormalizeDatabase()),
+        new(4, SeparateCustomersFromAppUsers()),
+        new(5, RemoveUserTypeTable())
     ];
 
     private static string CreateInitialTables()
@@ -152,13 +155,6 @@ public static class DatabaseMigrations
     private static string NormalizeDatabase()
     {
         return """
-            CREATE TABLE user_type (id integer PRIMARY KEY, code varchar(30) NOT NULL UNIQUE, name varchar(100) NOT NULL);
-            INSERT INTO user_type VALUES (1, 'customer', 'Customer'), (2, 'operator', 'Operator'), (3, 'administrator', 'Administrator');
-            INSERT INTO user_type (id, code, name)
-            SELECT DISTINCT user_type_id, 'legacy_' || user_type_id, 'Legacy ' || user_type_id FROM app_user
-            WHERE user_type_id NOT IN (SELECT id FROM user_type);
-            ALTER TABLE app_user ADD CONSTRAINT fk_app_user_user_type FOREIGN KEY (user_type_id) REFERENCES user_type(id) ON DELETE RESTRICT;
-
             CREATE TABLE chat_session_status (id smallint PRIMARY KEY, code varchar(30) NOT NULL UNIQUE, name varchar(100) NOT NULL);
             INSERT INTO chat_session_status VALUES (1, 'active', 'Active'), (2, 'closed', 'Closed');
             ALTER TABLE chat_session ADD COLUMN status_id smallint;
@@ -197,6 +193,41 @@ public static class DatabaseMigrations
             ALTER TABLE knowledge DROP CONSTRAINT ck_knowledge_status, DROP COLUMN status, DROP COLUMN category;
             CREATE INDEX ix_knowledge_status_id ON knowledge(status_id);
             CREATE INDEX ix_knowledge_category_id ON knowledge(category_id);
+            """;
+    }
+
+    private static string SeparateCustomersFromAppUsers()
+    {
+        return $"""
+            CREATE TABLE customer (
+                id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+                app_user_id uuid NOT NULL UNIQUE REFERENCES app_user(id) ON DELETE CASCADE,
+                created_at timestamp with time zone NOT NULL DEFAULT now(),
+                updated_at timestamp with time zone NOT NULL DEFAULT now()
+            );
+
+            INSERT INTO customer (id, app_user_id, created_at, updated_at)
+            SELECT id, id, created_at, updated_at
+            FROM app_user
+            WHERE user_type_id = {(int)UserType.Customer};
+
+            ALTER TABLE chat_session DROP CONSTRAINT chat_session_customer_id_fkey;
+            ALTER TABLE chat_session ADD CONSTRAINT fk_chat_session_customer
+                FOREIGN KEY (customer_id) REFERENCES customer(id) ON DELETE CASCADE;
+
+            ALTER TABLE ticket DROP CONSTRAINT ticket_customer_id_fkey;
+            ALTER TABLE ticket ADD CONSTRAINT fk_ticket_customer
+                FOREIGN KEY (customer_id) REFERENCES customer(id) ON DELETE CASCADE;
+
+            """;
+    }
+
+    private static string RemoveUserTypeTable()
+    {
+        return """
+            ALTER TABLE app_user DROP CONSTRAINT IF EXISTS fk_app_user_user_type;
+            ALTER TABLE app_user DROP CONSTRAINT IF EXISTS app_user_user_type_id_fkey;
+            DROP TABLE IF EXISTS user_type;
             """;
     }
 }

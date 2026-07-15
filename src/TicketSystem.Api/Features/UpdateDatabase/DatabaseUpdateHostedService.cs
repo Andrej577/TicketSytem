@@ -1,3 +1,5 @@
+using TicketSystem.DAL.Database;
+
 namespace TicketSystem.Api.Features.UpdateDatabase;
 
 public sealed class DatabaseUpdateHostedService : IHostedService

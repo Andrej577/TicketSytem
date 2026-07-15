@@ -4,9 +4,9 @@ public sealed class CustomerDTO
 {
     public Guid Id { get; set; }
 
-    public string Email { get; set; } = string.Empty;
+    public Guid AppUserId { get; set; }
 
-    public int UserTypeId { get; set; }
+    public string Email { get; set; } = string.Empty;
 
     public DateTimeOffset CreatedAt { get; set; }
 

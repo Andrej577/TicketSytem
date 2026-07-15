@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TicketSystem.Shared", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TicketSystem.Api", "src\TicketSystem.Api\TicketSystem.Api.csproj", "{4025E8F6-1E5D-4B9E-B69A-C66EE9FA537E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TicketSystem.DAL", "src\TicketSystem.DAL\TicketSystem.DAL.csproj", "{A3B3E013-F7C6-4A15-A0DB-8484725A7011}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,6 +37,10 @@ Global
 		{4025E8F6-1E5D-4B9E-B69A-C66EE9FA537E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4025E8F6-1E5D-4B9E-B69A-C66EE9FA537E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4025E8F6-1E5D-4B9E-B69A-C66EE9FA537E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3B3E013-F7C6-4A15-A0DB-8484725A7011}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3B3E013-F7C6-4A15-A0DB-8484725A7011}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3B3E013-F7C6-4A15-A0DB-8484725A7011}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3B3E013-F7C6-4A15-A0DB-8484725A7011}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -44,5 +50,6 @@ Global
 		{E8B83BEC-D6D7-4A34-A9C2-4912114EFC32} = {D4B0460C-5F76-416C-8A15-96BB2ABBCB4E}
 		{47001A73-B2AE-4A9B-8774-3AD07FA4C7C8} = {D4B0460C-5F76-416C-8A15-96BB2ABBCB4E}
 		{4025E8F6-1E5D-4B9E-B69A-C66EE9FA537E} = {D4B0460C-5F76-416C-8A15-96BB2ABBCB4E}
+		{A3B3E013-F7C6-4A15-A0DB-8484725A7011} = {D4B0460C-5F76-416C-8A15-96BB2ABBCB4E}
 	EndGlobalSection
 EndGlobal
