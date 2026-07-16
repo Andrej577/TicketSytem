@@ -1,149 +1,252 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TABLE chat_session_status (
-    id smallint PRIMARY KEY,
-    code varchar(30) NOT NULL UNIQUE,
-    name varchar(100) NOT NULL
+CREATE SEQUENCE "TicketNumberSequence" AS bigint START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE "ChatSessionStatus" (
+    "Id" smallint NOT NULL,
+    "Code" varchar(30) NOT NULL,
+    "Name" varchar(100) NOT NULL,
+    CONSTRAINT "PK_ChatSessionStatus" PRIMARY KEY ("Id"),
+    CONSTRAINT "UQ_ChatSessionStatusCode" UNIQUE ("Code")
 );
 
-INSERT INTO chat_session_status VALUES
+CREATE TABLE "TicketStatus" (
+    "Id" smallint NOT NULL,
+    "Code" varchar(30) NOT NULL,
+    "Name" varchar(100) NOT NULL,
+    CONSTRAINT "PK_TicketStatus" PRIMARY KEY ("Id"),
+    CONSTRAINT "UQ_TicketStatusCode" UNIQUE ("Code")
+);
+
+CREATE TABLE "TicketPriority" (
+    "Id" smallint NOT NULL,
+    "Code" varchar(30) NOT NULL,
+    "Name" varchar(100) NOT NULL,
+    "SortOrder" smallint NOT NULL,
+    CONSTRAINT "PK_TicketPriority" PRIMARY KEY ("Id"),
+    CONSTRAINT "UQ_TicketPriorityCode" UNIQUE ("Code"),
+    CONSTRAINT "UQ_TicketPrioritySortOrder" UNIQUE ("SortOrder")
+);
+
+CREATE TABLE "KnowledgeStatus" (
+    "Id" smallint NOT NULL,
+    "Code" varchar(30) NOT NULL,
+    "Name" varchar(100) NOT NULL,
+    CONSTRAINT "PK_KnowledgeStatus" PRIMARY KEY ("Id"),
+    CONSTRAINT "UQ_KnowledgeStatusCode" UNIQUE ("Code")
+);
+
+CREATE TABLE "KnowledgeCategory" (
+    "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "Name" varchar(100) NOT NULL,
+    CONSTRAINT "PK_KnowledgeCategory" PRIMARY KEY ("Id"),
+    CONSTRAINT "UQ_KnowledgeCategoryName" UNIQUE ("Name")
+);
+
+CREATE TABLE "AppUser" (
+    "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "Email" varchar(320) NOT NULL,
+    "PasswordHash" text NOT NULL,
+    "UserTypeId" integer NOT NULL,
+    "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    "UpdatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    "UpdatedByUserId" uuid NOT NULL,
+    CONSTRAINT "PK_AppUser" PRIMARY KEY ("Id"),
+    CONSTRAINT "UQ_AppUserEmail" UNIQUE ("Email")
+);
+
+CREATE TABLE "ChatSession" (
+    "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "CustomerId" uuid NOT NULL,
+    "OperatorId" uuid,
+    "Title" varchar(200),
+    "StatusId" smallint NOT NULL DEFAULT 1,
+    "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    "ClosedAt" timestamp with time zone,
+    CONSTRAINT "PK_ChatSession" PRIMARY KEY ("Id")
+);
+
+CREATE TABLE "Ticket" (
+    "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "TicketNumber" bigint NOT NULL DEFAULT nextval('"TicketNumberSequence"'),
+    "ChatSessionId" uuid NOT NULL,
+    "CustomerId" uuid NOT NULL,
+    "OperatorId" uuid,
+    "Title" varchar(200) NOT NULL,
+    "Content" text NOT NULL,
+    "StatusId" smallint NOT NULL DEFAULT 1,
+    "PriorityId" smallint NOT NULL DEFAULT 2,
+    "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    "UpdatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    "ClosedAt" timestamp with time zone,
+    CONSTRAINT "PK_Ticket" PRIMARY KEY ("Id"),
+    CONSTRAINT "UQ_TicketTicketNumber" UNIQUE ("TicketNumber")
+);
+
+CREATE TABLE "Message" (
+    "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "ChatSessionId" uuid NOT NULL,
+    "TicketId" uuid,
+    "SenderId" uuid NOT NULL,
+    "Content" text NOT NULL,
+    "SentAt" timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT "PK_Message" PRIMARY KEY ("Id")
+);
+
+CREATE TABLE "MessageRead" (
+    "MessageId" uuid NOT NULL,
+    "UserId" uuid NOT NULL,
+    "ReadAt" timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT "PK_MessageRead" PRIMARY KEY ("MessageId", "UserId")
+);
+
+CREATE TABLE "Knowledge" (
+    "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "Title" varchar(200) NOT NULL,
+    "Content" text NOT NULL,
+    "CategoryId" uuid,
+    "StatusId" smallint NOT NULL DEFAULT 1,
+    "AuthorId" uuid NOT NULL,
+    "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    "UpdatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    "PublishedAt" timestamp with time zone,
+    CONSTRAINT "PK_Knowledge" PRIMARY KEY ("Id")
+);
+
+ALTER TABLE "AppUser"
+ADD CONSTRAINT "FK_AppUserUpdatedByUserIdAppUser"
+FOREIGN KEY ("UpdatedByUserId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
+
+ALTER TABLE "ChatSession"
+ADD CONSTRAINT "FK_ChatSessionCustomerIdAppUser"
+FOREIGN KEY ("CustomerId") REFERENCES "AppUser" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "ChatSession"
+ADD CONSTRAINT "FK_ChatSessionOperatorIdAppUser"
+FOREIGN KEY ("OperatorId") REFERENCES "AppUser" ("Id") ON DELETE SET NULL;
+
+ALTER TABLE "ChatSession"
+ADD CONSTRAINT "FK_ChatSessionStatusIdChatSessionStatus"
+FOREIGN KEY ("StatusId") REFERENCES "ChatSessionStatus" ("Id") ON DELETE RESTRICT;
+
+ALTER TABLE "Ticket"
+ADD CONSTRAINT "FK_TicketChatSessionIdChatSession"
+FOREIGN KEY ("ChatSessionId") REFERENCES "ChatSession" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "Ticket"
+ADD CONSTRAINT "FK_TicketCustomerIdAppUser"
+FOREIGN KEY ("CustomerId") REFERENCES "AppUser" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "Ticket"
+ADD CONSTRAINT "FK_TicketOperatorIdAppUser"
+FOREIGN KEY ("OperatorId") REFERENCES "AppUser" ("Id") ON DELETE SET NULL;
+
+ALTER TABLE "Ticket"
+ADD CONSTRAINT "FK_TicketStatusIdTicketStatus"
+FOREIGN KEY ("StatusId") REFERENCES "TicketStatus" ("Id") ON DELETE RESTRICT;
+
+ALTER TABLE "Ticket"
+ADD CONSTRAINT "FK_TicketPriorityIdTicketPriority"
+FOREIGN KEY ("PriorityId") REFERENCES "TicketPriority" ("Id") ON DELETE RESTRICT;
+
+ALTER TABLE "Message"
+ADD CONSTRAINT "FK_MessageChatSessionIdChatSession"
+FOREIGN KEY ("ChatSessionId") REFERENCES "ChatSession" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "Message"
+ADD CONSTRAINT "FK_MessageTicketIdTicket"
+FOREIGN KEY ("TicketId") REFERENCES "Ticket" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "Message"
+ADD CONSTRAINT "FK_MessageSenderIdAppUser"
+FOREIGN KEY ("SenderId") REFERENCES "AppUser" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "MessageRead"
+ADD CONSTRAINT "FK_MessageReadMessageIdMessage"
+FOREIGN KEY ("MessageId") REFERENCES "Message" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "MessageRead"
+ADD CONSTRAINT "FK_MessageReadUserIdAppUser"
+FOREIGN KEY ("UserId") REFERENCES "AppUser" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "Knowledge"
+ADD CONSTRAINT "FK_KnowledgeCategoryIdKnowledgeCategory"
+FOREIGN KEY ("CategoryId") REFERENCES "KnowledgeCategory" ("Id") ON DELETE SET NULL;
+
+ALTER TABLE "Knowledge"
+ADD CONSTRAINT "FK_KnowledgeStatusIdKnowledgeStatus"
+FOREIGN KEY ("StatusId") REFERENCES "KnowledgeStatus" ("Id") ON DELETE RESTRICT;
+
+ALTER TABLE "Knowledge"
+ADD CONSTRAINT "FK_KnowledgeAuthorIdAppUser"
+FOREIGN KEY ("AuthorId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
+
+ALTER SEQUENCE "TicketNumberSequence" OWNED BY "Ticket"."TicketNumber";
+
+CREATE INDEX "IXAppUserUserTypeId" ON "AppUser" ("UserTypeId");
+
+CREATE INDEX "IXAppUserUpdatedByUserId" ON "AppUser" ("UpdatedByUserId");
+
+CREATE INDEX "IXChatSessionCustomerId" ON "ChatSession" ("CustomerId");
+
+CREATE INDEX "IXChatSessionOperatorId" ON "ChatSession" ("OperatorId");
+
+CREATE INDEX "IXTicketChatSessionId" ON "Ticket" ("ChatSessionId");
+
+CREATE INDEX "IXTicketCustomerId" ON "Ticket" ("CustomerId");
+
+CREATE INDEX "IXTicketOperatorId" ON "Ticket" ("OperatorId");
+
+CREATE INDEX "IXTicketStatusId" ON "Ticket" ("StatusId");
+
+CREATE INDEX "IXTicketPriorityId" ON "Ticket" ("PriorityId");
+
+CREATE INDEX "IXMessageChatSessionIdSentAt" ON "Message" ("ChatSessionId", "SentAt");
+
+CREATE INDEX "IXMessageTicketIdSentAt" ON "Message" ("TicketId", "SentAt");
+
+CREATE INDEX "IXMessageSenderId" ON "Message" ("SenderId");
+
+CREATE INDEX "IXMessageReadUserId" ON "MessageRead" ("UserId");
+
+CREATE INDEX "IXKnowledgeStatusId" ON "Knowledge" ("StatusId");
+
+CREATE INDEX "IXKnowledgeCategoryId" ON "Knowledge" ("CategoryId");
+
+CREATE INDEX "IXKnowledgeAuthorId" ON "Knowledge" ("AuthorId");
+
+INSERT INTO "ChatSessionStatus" ("Id", "Code", "Name")
+VALUES
     (1, 'active', 'Active'),
     (2, 'closed', 'Closed');
 
-CREATE TABLE ticket_status (
-    id smallint PRIMARY KEY,
-    code varchar(30) NOT NULL UNIQUE,
-    name varchar(100) NOT NULL
-);
-
-INSERT INTO ticket_status VALUES
+INSERT INTO "TicketStatus" ("Id", "Code", "Name")
+VALUES
     (1, 'open', 'Open'),
     (2, 'in_progress', 'In progress'),
     (3, 'resolved', 'Resolved'),
     (4, 'closed', 'Closed');
 
-CREATE TABLE ticket_priority (
-    id smallint PRIMARY KEY,
-    code varchar(30) NOT NULL UNIQUE,
-    name varchar(100) NOT NULL,
-    sort_order smallint NOT NULL UNIQUE
-);
-
-INSERT INTO ticket_priority VALUES
+INSERT INTO "TicketPriority" ("Id", "Code", "Name", "SortOrder")
+VALUES
     (1, 'low', 'Low', 1),
     (2, 'normal', 'Normal', 2),
     (3, 'high', 'High', 3),
     (4, 'urgent', 'Urgent', 4);
 
-CREATE TABLE knowledge_status (
-    id smallint PRIMARY KEY,
-    code varchar(30) NOT NULL UNIQUE,
-    name varchar(100) NOT NULL
-);
-
-INSERT INTO knowledge_status VALUES
+INSERT INTO "KnowledgeStatus" ("Id", "Code", "Name")
+VALUES
     (1, 'draft', 'Draft'),
     (2, 'published', 'Published'),
     (3, 'archived', 'Archived');
 
-CREATE TABLE knowledge_category (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    name varchar(100) NOT NULL UNIQUE
+INSERT INTO "AppUser" ("Id", "Email", "PasswordHash", "UserTypeId", "CreatedAt", "UpdatedAt", "UpdatedByUserId")
+VALUES (
+    '2d6781ce-863a-4ca4-83c3-c4d521f8e23d',
+    'admin@ticketsystem.local',
+    'pbkdf2-sha256$100000$lgmjqMVW/xj4j8oNTZkmJQ==$FCDoM5xmI0/o5IoxEzoMhClT9sNIazb13MmNk6Ih05s=',
+    3,
+    now(),
+    now(),
+    '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'
 );
-
-CREATE TABLE app_user (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    email varchar(320) NOT NULL UNIQUE,
-    password_hash text NOT NULL,
-    user_type_id integer NOT NULL,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    updated_at timestamp with time zone NOT NULL DEFAULT now()
-);
-
-CREATE TABLE customer (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    app_user_id uuid NOT NULL UNIQUE REFERENCES app_user(id) ON DELETE CASCADE,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    updated_at timestamp with time zone NOT NULL DEFAULT now()
-);
-
-CREATE TABLE chat_session (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id uuid NOT NULL REFERENCES customer(id) ON DELETE CASCADE,
-    operator_id uuid REFERENCES app_user(id) ON DELETE SET NULL,
-    title varchar(200),
-    status_id smallint NOT NULL DEFAULT 1 REFERENCES chat_session_status(id) ON DELETE RESTRICT,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    closed_at timestamp with time zone
-);
-
-CREATE TABLE ticket (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    ticket_number bigserial UNIQUE,
-    chat_session_id uuid NOT NULL REFERENCES chat_session(id) ON DELETE CASCADE,
-    customer_id uuid NOT NULL REFERENCES customer(id) ON DELETE CASCADE,
-    operator_id uuid REFERENCES app_user(id) ON DELETE SET NULL,
-    title varchar(200) NOT NULL,
-    content text NOT NULL,
-    status_id smallint NOT NULL DEFAULT 1 REFERENCES ticket_status(id) ON DELETE RESTRICT,
-    priority_id smallint NOT NULL DEFAULT 2 REFERENCES ticket_priority(id) ON DELETE RESTRICT,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    updated_at timestamp with time zone NOT NULL DEFAULT now(),
-    closed_at timestamp with time zone
-);
-
-CREATE TABLE message (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    chat_session_id uuid NOT NULL REFERENCES chat_session(id) ON DELETE CASCADE,
-    ticket_id uuid REFERENCES ticket(id) ON DELETE CASCADE,
-    sender_id uuid NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
-    content text NOT NULL,
-    sent_at timestamp with time zone NOT NULL DEFAULT now()
-);
-
-CREATE TABLE message_read (
-    message_id uuid NOT NULL REFERENCES message(id) ON DELETE CASCADE,
-    user_id uuid NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
-    read_at timestamp with time zone NOT NULL DEFAULT now(),
-    PRIMARY KEY (message_id, user_id)
-);
-
-CREATE TABLE knowledge (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    title varchar(200) NOT NULL,
-    content text NOT NULL,
-    category_id uuid REFERENCES knowledge_category(id) ON DELETE SET NULL,
-    status_id smallint NOT NULL DEFAULT 1 REFERENCES knowledge_status(id) ON DELETE RESTRICT,
-    author_id uuid NOT NULL REFERENCES app_user(id) ON DELETE RESTRICT,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    updated_at timestamp with time zone NOT NULL DEFAULT now(),
-    published_at timestamp with time zone
-);
-
-CREATE INDEX ix_chat_session_customer_id ON chat_session(customer_id);
-
-CREATE INDEX ix_chat_session_operator_id ON chat_session(operator_id);
-
-CREATE INDEX ix_ticket_chat_session_id ON ticket(chat_session_id);
-
-CREATE INDEX ix_ticket_customer_id ON ticket(customer_id);
-
-CREATE INDEX ix_ticket_operator_id ON ticket(operator_id);
-
-CREATE INDEX ix_ticket_status_id ON ticket(status_id);
-
-CREATE INDEX ix_ticket_priority_id ON ticket(priority_id);
-
-CREATE INDEX ix_message_chat_session_id_sent_at ON message(chat_session_id, sent_at);
-
-CREATE INDEX ix_message_ticket_id_sent_at ON message(ticket_id, sent_at);
-
-CREATE INDEX ix_message_sender_id ON message(sender_id);
-
-CREATE INDEX ix_message_read_user_id ON message_read(user_id);
-
-CREATE INDEX ix_knowledge_status_id ON knowledge(status_id);
-
-CREATE INDEX ix_knowledge_category_id ON knowledge(category_id);
-
-CREATE INDEX ix_knowledge_author_id ON knowledge(author_id);

@@ -1,18 +1,12 @@
 # Database Update Schema
 
-This folder contains a small database update mechanism for the TicketSystem API.
-It is not an Entity Framework migration setup. It is a lightweight PostgreSQL
-schema updater that runs SQL migrations when the API starts.
+This folder contains the lightweight PostgreSQL schema updater used by the
+TicketSystem API. It is not an Entity Framework migration setup. The updater
+runs numbered SQL migrations when the API starts.
 
-## Purpose
-
-The updater keeps the database schema aligned with the application code.
-Each schema change is represented as a numbered `DatabaseMigration`. When the
-API starts, the updater checks which migration versions were already applied and
-runs only the missing ones.
-
-This gives the project a repeatable way to create or update the database without
-manually running `schema.sql` every time.
+`DatabaseMigrations` is the runtime source of truth. The root `schema.sql` file
+mirrors the complete `UpgradeTo1` baseline so the schema can also be inspected
+or created manually.
 
 ## Startup Flow
 
@@ -22,148 +16,121 @@ The flow starts in `Program.cs`:
 builder.Services.AddDatabaseUpdater();
 ```
 
-`AddDatabaseUpdater()` registers `DatabaseUpdateHostedService` as a hosted
-service. ASP.NET Core starts hosted services during application startup, before
-the API begins handling requests.
+`AddDatabaseUpdater()` registers `DatabaseUpdateHostedService`. During API
+startup, the hosted service:
 
-The hosted service:
-
-1. Reads `ConnectionStrings:DefaultConnection` from configuration.
-2. Skips the update if the connection string is missing.
+1. Reads `ConnectionStrings:DefaultConnection`.
+2. Skips the update when the connection string is missing.
 3. Creates a `DatabaseUpdater`.
-4. Passes all registered migrations from `DatabaseMigrations.All`.
-5. Runs `UpdateAsync()`.
+4. Passes the migrations from `DatabaseMigrations.All`.
+5. Applies pending migrations in ascending version order.
 
-## Version Tracking Table
+## Version Tracking
 
 Before applying migrations, the updater ensures this table exists:
 
 ```sql
-CREATE TABLE IF NOT EXISTS database_version (
-    version integer PRIMARY KEY,
-    applied_at timestamp with time zone NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS "DatabaseVersion" (
+    "Version" integer NOT NULL,
+    "AppliedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT "PK_DatabaseVersion" PRIMARY KEY ("Version")
 );
 ```
 
-This table is the source of truth for executed migrations.
+`Version` is the unique migration number, and `AppliedAt` records when it was
+applied. A version already present in `DatabaseVersion` is skipped.
 
-- `version` is the unique migration number.
-- `applied_at` records when the migration was applied.
+## Migration Naming and Ordering
 
-If a migration version already exists in `database_version`, the updater skips
-that migration.
-
-## Migration Ordering
-
-`DatabaseUpdater` sorts migrations by `Version` before running them:
+Migration methods are named after their target version:
 
 ```csharp
-this.migrations = migrations.OrderBy(migration => migration.Version).ToArray();
+public static int DatabaseVersion { get; } = 1;
+
+public static IReadOnlyList<DatabaseMigration> All { get; } =
+[
+    new(1, UpgradeTo1())
+];
 ```
 
-This means migrations should always use increasing version numbers:
+The next schema change must use version `2` and method `UpgradeTo2()`. Never
+reuse an applied version number for different SQL. Once a baseline is used by a
+shared database, preserve it and add a new migration instead of changing it.
 
-- `1` for the initial schema.
-- `2` for the next schema change.
-- `3` for the change after that.
+## UpgradeTo1 Baseline
 
-Do not reuse an existing version number for a different change.
+`UpgradeTo1()` contains the complete initial schema in this order:
 
-## Transaction Behavior
+1. Enables `pgcrypto` and creates the quoted `TicketNumberSequence` sequence.
+2. Creates all tables without inline foreign keys.
+3. Adds every foreign key as an explicitly named constraint.
+4. Assigns sequence ownership and creates indexes.
+5. Inserts lookup values.
+6. Inserts the initial administrator last.
 
-Each migration is applied inside its own database transaction.
+Application-owned PostgreSQL tables, columns, indexes, and the sequence use
+quoted PascalCase names. Constraints use an uppercase type prefix followed by
+one underscore and a PascalCase name, such as `PK_AppUser` and
+`FK_TicketCustomerIdAppUser`. SQL queries must continue to quote identifiers
+with their exact casing.
 
-For every migration, the updater:
+The baseline has no separate Customer table. `ChatSession.CustomerId` and
+`Ticket.CustomerId` reference `AppUser.Id`. Customer identity is represented by
+`AppUser.UserTypeId`.
 
-1. Begins a transaction.
-2. Acquires a PostgreSQL advisory transaction lock.
-3. Checks whether the migration version is already applied.
-4. Executes the migration SQL if it is missing.
-5. Inserts a row into `database_version`.
-6. Commits the transaction.
+`AppUser.UpdatedByUserId` is required and has a self-referencing foreign key
+with `ON DELETE RESTRICT`. The initial administrator uses the same fixed ID for
+both `Id` and `UpdatedByUserId`:
 
-If the SQL fails, the transaction is not committed, and the migration version is
-not recorded. The next startup can try to apply it again after the problem is
-fixed.
-
-## Advisory Lock
-
-The updater uses this PostgreSQL lock:
-
-```sql
-SELECT pg_advisory_xact_lock(@lockKey);
+```text
+2d6781ce-863a-4ca4-83c3-c4d521f8e23d
 ```
 
-The lock protects the update process when multiple API instances start at the
-same time. Only one instance can apply a migration at a time. Other instances
-wait for the transaction lock, then re-check `database_version` before deciding
-whether the migration still needs to run.
+## Adding a Migration
 
-The current lock key is defined in `DatabaseUpdater`:
+To add the next database change:
 
-```csharp
-private const long AdvisoryLockKey = 820250703;
-```
-
-## Current Migration
-
-The first migration is registered in `DatabaseMigrations.All`:
-
-```csharp
-new(1, CreateInitialTables())
-```
-
-The current database schema version is also stored explicitly in
-`DatabaseMigrations.DatabaseVersion`.
-
-It creates:
-
-- `pgcrypto` extension for UUID generation.
-- `app_user`
-- `chat_session`
-- `ticket`
-- `message`
-- `message_read`
-- indexes for common lookup paths.
-
-The SQL is built from small private methods so each table definition is easier
-to read and change.
-
-## Adding a New Migration
-
-To add a database change:
-
-1. Add a new `DatabaseMigration` entry in `DatabaseMigrations.All`.
-2. Use the next available version number.
-3. Update `DatabaseMigrations.DatabaseVersion` to the newest version number.
-4. Put the SQL in a new private method.
+1. Increase `DatabaseMigrations.DatabaseVersion`.
+2. Add the next numbered entry to `DatabaseMigrations.All`.
+3. Add a private method whose name matches the target version.
+4. Put only the new schema delta in that method.
 
 Example:
 
 ```csharp
+public static int DatabaseVersion { get; } = 2;
+
 public static IReadOnlyList<DatabaseMigration> All { get; } =
 [
-    new(1, CreateInitialTables()),
-    new(2, AddTicketDueDate())
+    new(1, UpgradeTo1()),
+    new(2, UpgradeTo2())
 ];
 
-private static string AddTicketDueDate()
+private static string UpgradeTo2()
 {
     return """
-        ALTER TABLE ticket
-        ADD COLUMN IF NOT EXISTS due_at timestamp with time zone;
+        ALTER TABLE "Ticket"
+        ADD COLUMN "DueAt" timestamp with time zone;
         """;
 }
 ```
 
-Prefer idempotent SQL where PostgreSQL supports it, such as:
+## Transaction and Lock Behavior
 
-- `CREATE TABLE IF NOT EXISTS`
-- `CREATE INDEX IF NOT EXISTS`
-- `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
+Each migration runs in its own transaction. For every migration, the updater:
 
-The version table already prevents a migration from running twice, but
-idempotent SQL makes local development and recovery safer.
+1. Begins a transaction.
+2. Acquires the PostgreSQL advisory transaction lock.
+3. Checks `DatabaseVersion` for the migration version.
+4. Executes the SQL when the version is pending.
+5. Inserts the applied version.
+6. Commits the transaction.
+
+If the SQL fails, the transaction is not committed and the version is not
+recorded. The next startup can retry it after the problem is corrected.
+
+The advisory lock key is defined in `DatabaseMigrationExecutor`. It prevents
+multiple API instances from applying the same migration concurrently.
 
 ## Configuration
 
@@ -177,21 +144,24 @@ The updater expects this connection string:
 }
 ```
 
-If `DefaultConnection` is empty or missing, startup continues and the updater
-logs a warning:
+If `DefaultConnection` is missing, startup continues and the updater logs that
+the database update was skipped.
 
-```text
-Database update was skipped because ConnectionStrings:DefaultConnection is not configured.
-```
+## Reset Requirement
+
+The previous five development migrations were squashed into `UpgradeTo1`, and
+all database identifiers changed from unquoted snake_case to quoted PascalCase.
+An existing database that recorded the previous versions is not compatible
+with this reset baseline. Local development must recreate the database and its
+version-tracking table instead of only restarting the API.
 
 ## Operational Notes
 
-- The updater runs at API startup.
-- It currently targets PostgreSQL through `Npgsql`.
-- It does not roll back already committed older migrations if a later migration
-  fails.
-- It does not support automatic down migrations.
-- Migration SQL should be reviewed carefully because it runs with the configured
-  database user's permissions.
-- Existing migrations should not be edited after they have been applied to a
-  shared database. Add a new migration instead.
+- The updater runs during API startup.
+- PostgreSQL is accessed through Npgsql.
+- The updater has no automatic down migrations.
+- A later migration failure does not roll back earlier committed migrations.
+- The configured database user must have permission to create the required
+  extension and schema objects.
+- Keep `schema.sql` synchronized with `UpgradeTo1` whenever the initial baseline
+  is intentionally changed before it is shared.

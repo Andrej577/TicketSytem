@@ -10,13 +10,11 @@ public static class DatabaseMigrationExecutor
     public static async Task EnsureVersionTableAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
     {
         const string sql = """
-            CREATE TABLE IF NOT EXISTS database_version (
-                version integer PRIMARY KEY,
-                applied_at timestamp with time zone NOT NULL DEFAULT now()
+            CREATE TABLE IF NOT EXISTS "DatabaseVersion" (
+                "Version" integer NOT NULL,
+                "AppliedAt" timestamp with time zone NOT NULL DEFAULT now(),
+                CONSTRAINT "PK_DatabaseVersion" PRIMARY KEY ("Version")
             );
-
-            ALTER TABLE database_version
-            DROP COLUMN IF EXISTS name;
             """;
 
         var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
@@ -37,7 +35,7 @@ public static class DatabaseMigrationExecutor
         var migrationCommand = new CommandDefinition(migration.Sql, transaction: transaction, cancellationToken: cancellationToken);
         await connection.ExecuteAsync(migrationCommand);
 
-        const string insertVersionSql = "INSERT INTO database_version (version) VALUES (@Version);";
+        const string insertVersionSql = "INSERT INTO \"DatabaseVersion\" (\"Version\") VALUES (@Version);";
         var versionCommand = new CommandDefinition(insertVersionSql, new { migration.Version }, transaction, cancellationToken: cancellationToken);
         await connection.ExecuteAsync(versionCommand);
 
@@ -54,7 +52,7 @@ public static class DatabaseMigrationExecutor
 
     private static async Task<bool> IsAppliedAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, int version, CancellationToken cancellationToken)
     {
-        const string sql = "SELECT EXISTS (SELECT 1 FROM database_version WHERE version = @Version);";
+        const string sql = "SELECT EXISTS (SELECT 1 FROM \"DatabaseVersion\" WHERE \"Version\" = @Version);";
         var command = new CommandDefinition(sql, new { Version = version }, transaction, cancellationToken: cancellationToken);
         return await connection.QuerySingleAsync<bool>(command);
     }

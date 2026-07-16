@@ -1,10 +1,8 @@
 using Npgsql;
 using TicketSystem.Api.Features.AppUsers;
-using TicketSystem.Api.Features.Customers;
 using TicketSystem.Api.Features.UpdateDatabase;
 using TicketSystem.DAL.AppUsers;
 using TicketSystem.DAL.Configuration;
-using TicketSystem.DAL.Customers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +20,6 @@ builder.Services.AddSingleton(serviceProvider =>
     return NpgsqlDataSource.Create(connectionString);
 });
 builder.Services.AddScoped<AppUserRepository>();
-builder.Services.AddScoped<CustomerRepository>();
 
 var app = builder.Build();
 
@@ -36,6 +33,5 @@ app.UseHttpsRedirection();
 
 app.MapControllers();
 app.MapAppUserEndpoints();
-app.MapCustomerEndpoints();
 
 app.Run();

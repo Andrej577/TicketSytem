@@ -16,9 +16,9 @@ public sealed class TicketDTO
 
     public string Content { get; set; } = string.Empty;
 
-    public string Status { get; set; } = string.Empty;
+    public short StatusId { get; set; }
 
-    public string Priority { get; set; } = string.Empty;
+    public short PriorityId { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 

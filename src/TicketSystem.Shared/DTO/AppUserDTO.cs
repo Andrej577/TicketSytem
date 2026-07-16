@@ -11,4 +11,6 @@ public sealed class AppUserDTO
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset UpdatedAt { get; set; }
+
+    public Guid UpdatedByUserId { get; set; }
 }

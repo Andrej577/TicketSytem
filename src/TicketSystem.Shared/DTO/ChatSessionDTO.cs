@@ -10,7 +10,7 @@ public sealed class ChatSessionDTO
 
     public string? Title { get; set; }
 
-    public string Status { get; set; } = string.Empty;
+    public short StatusId { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
 

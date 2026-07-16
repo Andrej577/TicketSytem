@@ -1,11 +1,14 @@
-# Ticket System Database
+# Ticket System
 
-This directory contains the initial PostgreSQL schema for a ticket system with chat history support for SignalR communication. Table and column names are written in English.
+This repository contains a ticket system with PostgreSQL persistence, a Blazor Web application, an HTTP API, and a standalone SignalR host. The database schema is managed by ordered application migrations. PostgreSQL table and column identifiers use quoted PascalCase names that match their C# counterparts.
 
 ## Files
 
 - `TicketSystem.sln` - Visual Studio solution file for the application.
-- `schema.sql` - SQL script for creating tables, relationships, and indexes.
+- `src/TicketSystem.Api` - ASP.NET Core HTTP API that applies pending database migrations during startup.
+- `src/TicketSystem.DAL/Database/DatabaseMigrations.cs` - ordered PostgreSQL schema migrations.
+- `schema.sql` - standalone mirror of the current `UpgradeTo1` baseline for creating or inspecting an empty database.
+- `src/TicketSystem.Shared` - DTOs and enums shared by the API and Web projects.
 - `global.json` - pins the local SDK to .NET 8 for Visual Studio 2022 compatibility.
 - `src/TicketSystem.Web` - Blazor Web App project configured for MudBlazor and server interactivity.
 - `src/TicketSystem.Realtime` - standalone ASP.NET Core SignalR host used for chat communication.
@@ -22,7 +25,7 @@ Current setup:
 - `TicketSystem.Web` runs as the MudBlazor application.
 - `TicketSystem.Realtime` contains the `ChatHub` SignalR hub and the `ChatMessage` message model.
 - `TicketSystem.Realtime` maps the SignalR chat endpoint at `/hubs/chat`.
-- SignalR groups are named with the `chat-session:{sessionId}` pattern, matching the database `chat_session` concept.
+- SignalR groups are named with the `chat-session:{sessionId}` pattern, matching the database `ChatSession` concept.
 
 ## Visual Studio Launch
 
@@ -39,70 +42,94 @@ https://localhost:7197/hubs/chat
 
 ## Data Model
 
-### app_user
+### AppUser
 
-The `app_user` table stores all system users: customers, operators, and administrators.
+The `AppUser` table stores all customers, operators, and administrators. There is no separate `Customer` table; a customer is an `AppUser` whose `UserTypeId` is `1`.
 
-- `id` is a `uuid` primary key.
-- `email` is unique.
-- `password_hash` stores the hashed password. Never store a plain-text password.
-- `user_type_id` is an integer that can later be mapped to an enum in the application.
+- `Id` is a `uuid` primary key.
+- `Email` is unique.
+- `PasswordHash` stores the hashed password. Never store a plain-text password.
+- `UserTypeId` identifies whether the user is a customer, operator, or administrator.
+- `CreatedAt` and `UpdatedAt` store audit timestamps.
+- `UpdatedByUserId` identifies the administrator responsible for the latest change and references `AppUser.Id`.
 
-### chat_session
+### Lookup tables
 
-The `chat_session` table represents a conversation between a customer and an operator.
+Normalized status, priority, and category values are stored in lookup tables:
 
-- `customer_id` is the customer who started the conversation.
-- `operator_id` is the operator who accepted the conversation. It can be `NULL` until the conversation is assigned.
-- `title` is an optional conversation title.
-- `status` defines whether the conversation is `active` or `closed`.
+- `ChatSessionStatus` contains `Id`, `Code`, and `Name`; its codes are `active` and `closed`.
+- `TicketStatus` contains `Id`, `Code`, and `Name`; its codes are `open`, `in_progress`, `resolved`, and `closed`.
+- `TicketPriority` contains `Id`, `Code`, `Name`, and `SortOrder`; its codes are `low`, `normal`, `high`, and `urgent`.
+- `KnowledgeStatus` contains `Id`, `Code`, and `Name`; its codes are `draft`, `published`, and `archived`.
+- `KnowledgeCategory` contains `Id` and a unique `Name`.
 
-A chat session is a good boundary for a SignalR room/group. When a customer and operator connect through SignalR, they can be added to a group named, for example, `chat-session:{chat_session_id}`.
+### ChatSession
 
-### ticket
+The `ChatSession` table represents a conversation between a customer and an operator.
 
-The `ticket` table represents a concrete support request
+- `CustomerId` identifies the customer who started the conversation and references `AppUser.Id`.
+- `OperatorId` identifies the operator who accepted the conversation and references `AppUser.Id`. It can be `NULL` until the conversation is assigned.
+- `Title` is an optional conversation title.
+- `StatusId` references `ChatSessionStatus.Id`.
+- `CreatedAt` stores the creation time, while `ClosedAt` is set when the conversation is closed.
 
-- `id` is a `uuid` primary key.
-- `ticket_number` is an auto-incrementing business number that is useful for displaying tickets to users.
-- `chat_session_id` links the ticket to the conversation.
-- `customer_id` is the user who opened the ticket.
-- `operator_id` is the operator assigned to the ticket.
-- `content` is the initial problem description.
-- `status` tracks the ticket state: `open`, `in_progress`, `resolved`, or `closed`.
-- `priority` can be `low`, `normal`, `high`, or `urgent`.
+A chat session is a good boundary for a SignalR room/group. When a customer and operator connect through SignalR, they can be added to a group named, for example, `chat-session:{chatSessionId}`.
 
-In the simple flow, one ticket has one chat session. If multiple conversations are needed for the same ticket later, the relationship can be adjusted so that `chat_session` contains `ticket_id`.
+### Ticket
 
-### message
+The `Ticket` table represents a concrete support request.
 
-The `message` table stores chat history.
+- `Id` is a `uuid` primary key.
+- `TicketNumber` is an auto-incrementing business number that is useful for displaying tickets to users.
+- `ChatSessionId` links the ticket to `ChatSession.Id`.
+- `CustomerId` identifies the customer who opened the ticket and references `AppUser.Id`.
+- `OperatorId` identifies the assigned operator and references `AppUser.Id`.
+- `Title` and `Content` store the request title and initial problem description.
+- `StatusId` references `TicketStatus.Id`.
+- `PriorityId` references `TicketPriority.Id`.
+- `CreatedAt`, `UpdatedAt`, and nullable `ClosedAt` store lifecycle timestamps.
 
-- `chat_session_id` is required because every message belongs to a conversation.
-- `ticket_id` is optional, but useful when loading all messages for a ticket.
-- `sender_id` is the customer or operator who sent the message.
-- `content` is the message body.
-- `sent_at` stores the send time.
+In the simple flow, one ticket has one chat session. If multiple conversations are needed for the same ticket later, the relationship can be adjusted so that `ChatSession` contains a `TicketId` reference.
 
-### message_read
+### Message
 
-The `message_read` table stores per-user read receipts.
+The `Message` table stores chat history.
 
-- `message_id` is the message that was read.
-- `user_id` is the user who read the message.
-- `read_at` stores the read time.
+- `ChatSessionId` is required because every message belongs to a conversation.
+- `TicketId` is optional, but useful when loading all messages for a ticket.
+- `SenderId` identifies the customer or operator who sent the message.
+- `Content` is the message body.
+- `SentAt` stores the send time.
 
-This is more flexible than a single `is_read` field on `message`, because the same conversation can be read by a customer, an operator, and an administrator.
+### MessageRead
+
+The `MessageRead` table stores per-user read receipts.
+
+- `MessageId` identifies the message that was read.
+- `UserId` identifies the user who read the message.
+- `ReadAt` stores the read time.
+
+This is more flexible than a single read flag on `Message`, because the same conversation can be read by a customer, an operator, and an administrator.
+
+### Knowledge
+
+The `Knowledge` table stores knowledge-base articles.
+
+- `Title` and `Content` store the article contents.
+- `CategoryId` optionally references `KnowledgeCategory.Id`.
+- `StatusId` references `KnowledgeStatus.Id`.
+- `AuthorId` references the author in `AppUser.Id`.
+- `CreatedAt`, `UpdatedAt`, and nullable `PublishedAt` store lifecycle timestamps.
 
 ## Suggested Flow
 
 1. A customer starts a new support request.
-2. The application creates a `chat_session` record.
-3. The application creates a `ticket` record linked with `chat_session_id`.
-4. The customer's first message can be stored as a `message` with the same `chat_session_id` and `ticket_id`.
-5. SignalR sends messages to the group connected to `chat_session_id`.
-6. Every sent message is stored in `message`, so the chat history can be loaded from the database.
-7. When a customer or operator opens the conversation, the application inserts rows into `message_read` for the seen messages.
+2. The application creates a `ChatSession` record.
+3. The application creates a `Ticket` record linked through `ChatSessionId`.
+4. The customer's first message can be stored as a `Message` with the same `ChatSessionId` and `TicketId`.
+5. SignalR sends messages to the group connected to `ChatSessionId`.
+6. Every sent message is stored in `Message`, so the chat history can be loaded from the database.
+7. When a customer or operator opens the conversation, the application inserts rows into `MessageRead` for the seen messages.
 
 ## Potential UI Mock
 
@@ -195,10 +222,6 @@ Suggested layout ideas from the sixth mock:
 
 This is the preferred mock because it balances ticket context, chat history, and operator actions without making the screen feel overloaded. The implementation should lean toward this layout for the main ticket detail screen.
 
-## Running
+## Database migrations
 
-Example command:
-
-```bash
-psql -d database_name -f schema.sql
-```
+The API applies pending migrations from `DatabaseMigrations.All` during startup and records every applied version in the `DatabaseVersion` table. The root `schema.sql` file mirrors the complete `UpgradeTo1` baseline and can also be used to create an empty database manually. Both definitions must remain synchronized. See `deploy/README.md` for the container startup workflow.
