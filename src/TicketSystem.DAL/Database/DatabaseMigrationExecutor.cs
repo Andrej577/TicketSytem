@@ -6,11 +6,12 @@ namespace TicketSystem.DAL.Database;
 public static class DatabaseMigrationExecutor
 {
     private const long AdvisoryLockKey = 820250703;
+    private const string DatabaseVersionTable = "DatabaseVersion";
 
     public static async Task EnsureVersionTableAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
     {
-        const string sql = """
-            CREATE TABLE IF NOT EXISTS "DatabaseVersion" (
+        var sql = $"""
+            CREATE TABLE IF NOT EXISTS "{DatabaseVersionTable}" (
                 "Version" integer NOT NULL,
                 "AppliedAt" timestamp with time zone NOT NULL DEFAULT now(),
                 CONSTRAINT "PK_DatabaseVersion" PRIMARY KEY ("Version")
@@ -35,7 +36,7 @@ public static class DatabaseMigrationExecutor
         var migrationCommand = new CommandDefinition(migration.Sql, transaction: transaction, cancellationToken: cancellationToken);
         await connection.ExecuteAsync(migrationCommand);
 
-        const string insertVersionSql = "INSERT INTO \"DatabaseVersion\" (\"Version\") VALUES (@Version);";
+        var insertVersionSql = $"INSERT INTO \"{DatabaseVersionTable}\" (\"Version\") VALUES (@Version);";
         var versionCommand = new CommandDefinition(insertVersionSql, new { migration.Version }, transaction, cancellationToken: cancellationToken);
         await connection.ExecuteAsync(versionCommand);
 
@@ -52,7 +53,7 @@ public static class DatabaseMigrationExecutor
 
     private static async Task<bool> IsAppliedAsync(NpgsqlConnection connection, NpgsqlTransaction transaction, int version, CancellationToken cancellationToken)
     {
-        const string sql = "SELECT EXISTS (SELECT 1 FROM \"DatabaseVersion\" WHERE \"Version\" = @Version);";
+        var sql = $"SELECT EXISTS (SELECT 1 FROM \"{DatabaseVersionTable}\" WHERE \"Version\" = @Version);";
         var command = new CommandDefinition(sql, new { Version = version }, transaction, cancellationToken: cancellationToken);
         return await connection.QuerySingleAsync<bool>(command);
     }

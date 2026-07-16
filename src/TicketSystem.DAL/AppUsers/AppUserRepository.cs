@@ -7,6 +7,8 @@ namespace TicketSystem.DAL.AppUsers;
 
 public sealed class AppUserRepository
 {
+    private const string AppUserTable = "AppUser";
+
     private readonly NpgsqlDataSource dataSource;
 
     public AppUserRepository(NpgsqlDataSource dataSource)
@@ -16,7 +18,7 @@ public sealed class AppUserRepository
 
     public async Task<IReadOnlyList<AppUserDTO>> GetAllAsync(CancellationToken cancellationToken)
     {
-        const string sql = """
+        var sql = $"""
             SELECT
                 "Id",
                 "Email",
@@ -24,7 +26,7 @@ public sealed class AppUserRepository
                 "CreatedAt",
                 "UpdatedAt",
                 "UpdatedByUserId"
-            FROM "AppUser"
+            FROM "{AppUserTable}"
             ORDER BY "CreatedAt" DESC;
             """;
 
@@ -35,7 +37,7 @@ public sealed class AppUserRepository
 
     public async Task<AppUserDTO?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        const string sql = """
+        var sql = $"""
             SELECT
                 "Id",
                 "Email",
@@ -43,7 +45,7 @@ public sealed class AppUserRepository
                 "CreatedAt",
                 "UpdatedAt",
                 "UpdatedByUserId"
-            FROM "AppUser"
+            FROM "{AppUserTable}"
             WHERE "Id" = @Id;
             """;
 
@@ -54,8 +56,8 @@ public sealed class AppUserRepository
 
     public async Task<AppUserDTO> CreateAsync(string email, string passwordHash, int userTypeId, CancellationToken cancellationToken)
     {
-        const string sql = """
-            INSERT INTO "AppUser" ("Email", "PasswordHash", "UserTypeId", "UpdatedByUserId")
+        var sql = $"""
+            INSERT INTO "{AppUserTable}" ("Email", "PasswordHash", "UserTypeId", "UpdatedByUserId")
             VALUES (@Email, @PasswordHash, @UserTypeId, @UpdatedByUserId)
             RETURNING
                 "Id",
@@ -76,8 +78,8 @@ public sealed class AppUserRepository
     {
         var updatePassword = passwordHash is not null;
         var sql = updatePassword
-            ? """
-                UPDATE "AppUser"
+            ? $"""
+                UPDATE "{AppUserTable}"
                 SET "Email" = @Email, "PasswordHash" = @PasswordHash, "UpdatedAt" = now(), "UpdatedByUserId" = @UpdatedByUserId
                 WHERE "Id" = @Id
                 RETURNING
@@ -88,8 +90,8 @@ public sealed class AppUserRepository
                     "UpdatedAt",
                     "UpdatedByUserId";
                 """
-            : """
-                UPDATE "AppUser"
+            : $"""
+                UPDATE "{AppUserTable}"
                 SET "Email" = @Email, "UpdatedAt" = now(), "UpdatedByUserId" = @UpdatedByUserId
                 WHERE "Id" = @Id
                 RETURNING
@@ -118,7 +120,7 @@ public sealed class AppUserRepository
 
     public async Task<int> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        const string sql = "DELETE FROM \"AppUser\" WHERE \"Id\" = @Id;";
+        var sql = $"DELETE FROM \"{AppUserTable}\" WHERE \"Id\" = @Id;";
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var command = new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken);

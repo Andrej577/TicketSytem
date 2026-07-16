@@ -35,9 +35,8 @@ public static class AppUserEndpoints
     {
         try
         {
-            var email = AppUserInputValidator.NormalizeEmail(request.Email!);
             var passwordHash = PasswordHasher.Hash(request.Password);
-            var appUser = await repository.CreateAsync(email, passwordHash, request.UserTypeId, cancellationToken);
+            var appUser = await repository.CreateAsync(request.Email!, passwordHash, request.UserTypeId, cancellationToken);
             return Results.Created($"/api/app-users/{appUser.Id}", appUser);
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
@@ -50,9 +49,8 @@ public static class AppUserEndpoints
     {
         try
         {
-            var email = AppUserInputValidator.NormalizeEmail(request.Email!);
             var passwordHash = request.Password is null ? null : PasswordHasher.Hash(request.Password);
-            var appUser = await repository.UpdateAsync(id, email, passwordHash, cancellationToken);
+            var appUser = await repository.UpdateAsync(id, request.Email!, passwordHash, cancellationToken);
             return appUser is null ? Results.NotFound() : Results.Ok(appUser);
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
