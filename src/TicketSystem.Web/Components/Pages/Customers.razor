@@ -1,62 +1,216 @@
 @page "/customers"
+@using System.Globalization
+@using System.Text.Json
+@using TicketSystem.Shared.Enums
 @inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
 
-<PageTitle>Users | Ticket System</PageTitle>
+<PageTitle>Customers | Ticket System</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.False" Class="user-list-page">
     <header class="user-list-heading">
         <div>
-            <MudText Typo="Typo.h4" Class="user-list-title">Users</MudText>
+            <MudText Typo="Typo.h4" Class="user-list-title">Customers</MudText>
         </div>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Outlined.PersonAdd"
                    OnClick="OpenCreateCustomerDialogAsync"
+                   Disabled="isLoading"
                    Class="user-create-button">
             New customer
         </MudButton>
     </header>
 
-    <section class="user-list-toolbar" aria-label="User search and filters">
+    <section class="user-list-toolbar" aria-label="Customer search and filters">
         <div class="user-list-search">
             <MudIcon Icon="@Icons.Material.Outlined.Search" Size="Size.Small" />
             <MudTextField T="string"
-                          Placeholder="Search users..."
+                          @bind-Value="searchText"
+                          Placeholder="Search customers..."
                           Variant="Variant.Text"
                           Margin="Margin.Dense"
+                          Immediate="true"
                           Class="user-search-field"
-                          Disabled="true" />
+                          Disabled="isLoading" />
         </div>
         <div class="user-list-filters">
             <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true">Role: All</MudButton>
-            <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true">Type: All</MudButton>
+            <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true">Type: Customer</MudButton>
             <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true">Status: All</MudButton>
             <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.FilterList" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true">More filters</MudButton>
         </div>
     </section>
 
-    <section class="user-table-shell" aria-label="User list">
+    <section class="user-table-shell" aria-label="Customer list" role="table">
         <div class="user-table-header" role="row">
-            <span>ID</span>
-            <span>User / Email</span>
-            <span>Role</span>
-            <span>Type</span>
-            <span>Created</span>
-            <span>Status</span>
-            <span>Actions</span>
+            <span role="columnheader">Customer / Email</span>
+            <span role="columnheader">Type</span>
+            <span role="columnheader">Created</span>
+            <span role="columnheader">Updated</span>
+            <span role="columnheader">Updated by</span>
+            <span role="columnheader" class="user-table-actions-heading">Actions</span>
         </div>
-        <div class="user-table-empty">
-            <span class="user-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.PeopleOutline" /></span>
-            <MudText Typo="Typo.subtitle1">No users yet</MudText>
-            <MudText Typo="Typo.body2">Users will appear here when data is connected.</MudText>
-            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.PersonAdd" OnClick="OpenCreateCustomerDialogAsync">Add a customer</MudButton>
-        </div>
+
+        @if (isLoading)
+        {
+            <div class="user-table-empty" role="status">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                <MudText Typo="Typo.body2">Loading customers...</MudText>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(loadErrorMessage))
+        {
+            <div class="user-table-empty">
+                <span class="user-table-empty-icon user-table-empty-icon--error"><MudIcon Icon="@Icons.Material.Outlined.CloudOff" /></span>
+                <MudText Typo="Typo.subtitle1">Customers could not be loaded</MudText>
+                <MudText Typo="Typo.body2">@loadErrorMessage</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="LoadCustomersAsync">Try again</MudButton>
+            </div>
+        }
+        else if (customers.Count == 0)
+        {
+            <div class="user-table-empty">
+                <span class="user-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.PeopleOutline" /></span>
+                <MudText Typo="Typo.subtitle1">No customers yet</MudText>
+                <MudText Typo="Typo.body2">Create the first customer account to see it here.</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.PersonAdd" OnClick="OpenCreateCustomerDialogAsync">Add a customer</MudButton>
+            </div>
+        }
+        else if (!FilteredCustomers.Any())
+        {
+            <div class="user-table-empty">
+                <span class="user-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.SearchOff" /></span>
+                <MudText Typo="Typo.subtitle1">No matching customers</MudText>
+                <MudText Typo="Typo.body2">Try searching with a different email address.</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="ClearSearch">Clear search</MudButton>
+            </div>
+        }
+        else
+        {
+            <div class="user-table-body" role="rowgroup">
+                @foreach (var customer in FilteredCustomers)
+                {
+                    <div class="user-table-row" role="row" @key="customer.Id">
+                        <div class="user-table-customer" role="cell">
+                            <span class="user-table-avatar" aria-hidden="true">@GetEmailInitial(customer.Email)</span>
+                            <div class="user-table-customer-copy">
+                                <strong title="@customer.Email">@customer.Email</strong>
+                                <small>Customer account</small>
+                            </div>
+                        </div>
+                        <div role="cell">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@GetUserTypeName(customer.UserTypeId)</MudChip>
+                        </div>
+                        <div class="user-table-date" role="cell">
+                            <time datetime="@customer.CreatedAt.ToString("O")">@FormatDate(customer.CreatedAt)</time>
+                        </div>
+                        <div class="user-table-date" role="cell">
+                            <time datetime="@customer.UpdatedAt.ToString("O")">@FormatDate(customer.UpdatedAt)</time>
+                        </div>
+                        <div class="user-table-updated-by" role="cell" title="@customer.UpdatedByUserEmail">@customer.UpdatedByUserEmail</div>
+                        <div class="user-table-actions" role="cell">
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Primary"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Outlined.Edit"
+                                       OnClick="@(() => OpenEditCustomerDialogAsync(customer))">
+                                Edit
+                            </MudButton>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
     </section>
 </MudContainer>
 
 @code {
+    private const string UnknownUserEmail = "Unknown user";
+
+    private readonly Dictionary<Guid, string> updatedByUserEmails = [];
+    private List<CustomerPOCO> customers = [];
+    private string searchText = string.Empty;
+    private string? loadErrorMessage;
+    private bool isLoading = true;
+
+    private IEnumerable<CustomerPOCO> FilteredCustomers => string.IsNullOrWhiteSpace(searchText)
+        ? customers
+        : customers.Where(customer => customer.Email?.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase) == true);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await LoadCustomersAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadCustomersAsync()
+    {
+        isLoading = true;
+        loadErrorMessage = null;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            using var response = await client.GetAsync("api/app-users/customers");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                loadErrorMessage = "The API returned an error while loading customers.";
+                return;
+            }
+
+            var appUsers = await response.Content.ReadFromJsonAsync<List<AppUserDTO>>() ?? [];
+            var loadedCustomers = new List<CustomerPOCO>(appUsers.Count);
+
+            foreach (var appUser in appUsers)
+            {
+                loadedCustomers.Add(await CreateCustomerPOCOAsync(appUser));
+            }
+
+            customers = loadedCustomers;
+        }
+        catch (HttpRequestException)
+        {
+            loadErrorMessage = "The API is currently unavailable. Please try again later.";
+        }
+        catch (JsonException)
+        {
+            loadErrorMessage = "The API returned an invalid customer response.";
+        }
+        catch (TaskCanceledException)
+        {
+            loadErrorMessage = "The customer request timed out. Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
     private async Task OpenCreateCustomerDialogAsync()
     {
+        await OpenCustomerDialogAsync(null);
+    }
+
+    private async Task OpenEditCustomerDialogAsync(CustomerPOCO customer)
+    {
+        await OpenCustomerDialogAsync(customer);
+    }
+
+    private async Task OpenCustomerDialogAsync(CustomerPOCO? customer)
+    {
+        var parameters = new DialogParameters();
+        if (customer is not null)
+        {
+            parameters[nameof(CustomerDialog.Customer)] = customer;
+        }
+
         var options = new DialogOptions
         {
             CloseButton = true,
@@ -65,6 +219,99 @@
             BackdropClick = false
         };
 
-        await DialogService.ShowAsync<CreateCustomerDialog>("New customer", options);
+        var title = customer is null ? "New customer" : "Edit customer";
+        var dialog = await DialogService.ShowAsync<CustomerDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled || result.Data is not AppUserDTO savedAppUser)
+        {
+            return;
+        }
+
+        var savedCustomer = await CreateCustomerPOCOAsync(savedAppUser);
+        var existingCustomerIndex = customers.FindIndex(existingCustomer => existingCustomer.Id == savedCustomer.Id);
+
+        if (existingCustomerIndex >= 0)
+        {
+            customers[existingCustomerIndex] = savedCustomer;
+        }
+        else
+        {
+            customers.Insert(0, savedCustomer);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task<CustomerPOCO> CreateCustomerPOCOAsync(AppUserDTO appUser)
+    {
+        return new CustomerPOCO(appUser)
+        {
+            UpdatedByUserEmail = await GetUpdatedByUserEmailAsync(appUser.UpdatedByUserId)
+        };
+    }
+
+    private async Task<string> GetUpdatedByUserEmailAsync(Guid userId)
+    {
+        if (updatedByUserEmails.TryGetValue(userId, out var email))
+        {
+            return email;
+        }
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            using var response = await client.GetAsync($"api/app-users/{userId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                return CacheUpdatedByUserEmail(userId, UnknownUserEmail);
+            }
+
+            var appUser = await response.Content.ReadFromJsonAsync<AppUserDTO>();
+            if (appUser is null || string.IsNullOrWhiteSpace(appUser.Email))
+            {
+                return CacheUpdatedByUserEmail(userId, UnknownUserEmail);
+            }
+
+            return CacheUpdatedByUserEmail(userId, appUser.Email);
+        }
+        catch (HttpRequestException)
+        {
+            return CacheUpdatedByUserEmail(userId, UnknownUserEmail);
+        }
+        catch (JsonException)
+        {
+            return CacheUpdatedByUserEmail(userId, UnknownUserEmail);
+        }
+        catch (TaskCanceledException)
+        {
+            return CacheUpdatedByUserEmail(userId, UnknownUserEmail);
+        }
+    }
+
+    private string CacheUpdatedByUserEmail(Guid userId, string email)
+    {
+        updatedByUserEmails[userId] = email;
+        return email;
+    }
+
+    private void ClearSearch()
+    {
+        searchText = string.Empty;
+    }
+
+    private static string GetEmailInitial(string? email)
+    {
+        return string.IsNullOrWhiteSpace(email) ? "?" : email[..1].ToUpperInvariant();
+    }
+
+    private static string GetUserTypeName(int userTypeId)
+    {
+        return Enum.IsDefined(typeof(UserType), userTypeId) ? ((UserType)userTypeId).ToString() : "Unknown";
+    }
+
+    private static string FormatDate(DateTimeOffset date)
+    {
+        return date.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture);
     }
 }

@@ -1,0 +1,250 @@
+@using System.ComponentModel.DataAnnotations
+@using System.Net
+@using System.Text.Json
+@using TicketSystem.Shared.DTO
+@using TicketSystem.Shared.Enums
+@inject IHttpClientFactory HttpClientFactory
+@inject ISnackbar Snackbar
+
+<MudDialog Class="customer-dialog">
+    <DialogContent>
+        <div class="customer-dialog-intro">
+            <span class="customer-dialog-icon">
+                <MudIcon Icon="@(isEditMode ? Icons.Material.Outlined.ManageAccounts : Icons.Material.Outlined.PersonAdd)" />
+            </span>
+            <div>
+                <MudText Typo="Typo.subtitle1">@(isEditMode ? "Edit customer account" : "Create a customer account")</MudText>
+                <MudText Typo="Typo.body2">@DialogDescription</MudText>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true" Class="customer-dialog-error">
+                @errorMessage
+            </MudAlert>
+        }
+
+        <MudForm @ref="form" Class="customer-dialog-form">
+            <MudTextField T="string"
+                          Label="Email address"
+                          Placeholder="customer@example.com"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          @bind-Value="model.Email"
+                          Validation="@(new Func<string, string?>(ValidateEmail))"
+                          Immediate="true"
+                          Disabled="isSubmitting" />
+
+            <MudTextField T="string"
+                          Label="@(isEditMode ? "New password (optional)" : "Password")"
+                          Placeholder="@(isEditMode ? "Leave blank to keep the current password" : "Enter a password")"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          @bind-Value="model.Password"
+                          Validation="@(new Func<string, string?>(ValidatePassword))"
+                          Immediate="true"
+                          Disabled="isSubmitting" />
+
+            <MudTextField T="string"
+                          Label="@(isEditMode ? "Confirm new password" : "Confirm password")"
+                          Placeholder="@(isEditMode ? "Repeat the new password" : "Repeat the password")"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          @bind-Value="model.ConfirmPassword"
+                          Validation="@(new Func<string, string?>(ValidatePasswordConfirmation))"
+                          Immediate="true"
+                          Disabled="isSubmitting" />
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Cancel" Disabled="isSubmitting">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SubmitAsync" Disabled="isSubmitting">
+            @if (isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span>@(isEditMode ? "Updating..." : "Creating...")</span>
+            }
+            else
+            {
+                <span>@(isEditMode ? "Update customer" : "Create customer")</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public AppUserDTO? Customer { get; set; }
+
+    private readonly CustomerFormModel model = new();
+    private MudForm? form;
+    private bool isSubmitting;
+    private string? errorMessage;
+
+    private bool isEditMode => Customer is not null;
+
+    private string DialogDescription => isEditMode
+        ? "Update the customer's email address or enter a new password."
+        : "Enter the credentials the customer will use to access the portal.";
+
+    protected override void OnInitialized()
+    {
+        model.Email = Customer?.Email ?? string.Empty;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (form is null || isSubmitting)
+        {
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            await form.ValidateAsync();
+            if (!form.IsValid)
+            {
+                return;
+            }
+
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            using var response = isEditMode
+                ? await UpdateCustomerAsync(client)
+                : await CreateCustomerAsync(client);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var customer = await response.Content.ReadFromJsonAsync<AppUserDTO>();
+
+                if (customer is null)
+                {
+                    errorMessage = "The API returned an empty customer response.";
+                    return;
+                }
+
+                Snackbar.Add(isEditMode ? "Customer updated successfully." : "Customer created successfully.", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(customer));
+                return;
+            }
+
+            errorMessage = GetErrorMessage(response.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "The API is currently unavailable. Please try again later.";
+        }
+        catch (JsonException)
+        {
+            errorMessage = "The API returned an invalid customer response.";
+        }
+        catch (TaskCanceledException)
+        {
+            errorMessage = "The customer request timed out. Please try again.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private Task<HttpResponseMessage> CreateCustomerAsync(HttpClient client)
+    {
+        return client.PostAsJsonAsync("api/app-users", new
+        {
+            Email = model.Email.Trim(),
+            model.Password,
+            UserTypeId = (int)UserType.Customer
+        });
+    }
+
+    private Task<HttpResponseMessage> UpdateCustomerAsync(HttpClient client)
+    {
+        return client.PutAsJsonAsync($"api/app-users/{Customer!.Id}", new
+        {
+            Email = model.Email.Trim(),
+            Password = string.IsNullOrWhiteSpace(model.Password) ? null : model.Password
+        });
+    }
+
+    private string GetErrorMessage(HttpStatusCode statusCode)
+    {
+        return statusCode switch
+        {
+            HttpStatusCode.Conflict => "A user with this email address already exists.",
+            HttpStatusCode.BadRequest => "Please check the entered customer information.",
+            HttpStatusCode.NotFound when isEditMode => "The customer no longer exists.",
+            _ when isEditMode => "The customer could not be updated. Please try again.",
+            _ => "The customer could not be created. Please try again."
+        };
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private static string? ValidateEmail(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "Email address is required.";
+        }
+
+        return new EmailAddressAttribute().IsValid(value)
+            ? null
+            : "Enter a valid email address.";
+    }
+
+    private string? ValidatePassword(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return isEditMode ? null : "Password is required.";
+        }
+
+        return value.Length >= 8
+            ? null
+            : "Password must contain at least 8 characters.";
+    }
+
+    private string? ValidatePasswordConfirmation(string value)
+    {
+        if (string.IsNullOrWhiteSpace(model.Password))
+        {
+            if (!isEditMode)
+            {
+                return "Confirm the password.";
+            }
+
+            return string.IsNullOrWhiteSpace(value)
+                ? null
+                : "Enter a new password before confirming it.";
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return isEditMode ? "Confirm the new password." : "Confirm the password.";
+        }
+
+        return value == model.Password
+            ? null
+            : "Passwords do not match.";
+    }
+
+    private sealed class CustomerFormModel
+    {
+        public string Email { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
+
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

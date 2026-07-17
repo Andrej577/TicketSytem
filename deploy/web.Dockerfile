@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY ["src/TicketSystem.Web/TicketSystem.Web.csproj", "src/TicketSystem.Web/"]
+COPY ["src/TicketSystem.Shared/TicketSystem.Shared.csproj", "src/TicketSystem.Shared/"]
 RUN dotnet restore "src/TicketSystem.Web/TicketSystem.Web.csproj"
 
 COPY . .

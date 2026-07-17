@@ -12,6 +12,7 @@ public static class AppUserEndpoints
         var group = endpoints.MapGroup("/api/app-users").WithTags("App users");
 
         group.MapGet("/", GetAppUsers).WithName("GetAppUsers").Produces<IReadOnlyList<AppUserDTO>>(StatusCodes.Status200OK);
+        group.MapGet("/customers", GetCustomers).WithName("GetCustomers").Produces<IReadOnlyList<AppUserDTO>>(StatusCodes.Status200OK);
         group.MapGet("/{id:guid}", GetAppUser).WithName("GetAppUser").Produces<AppUserDTO>(StatusCodes.Status200OK).Produces(StatusCodes.Status404NotFound);
         group.MapPost("/", CreateAppUser).WithName("CreateAppUser").Produces<AppUserDTO>(StatusCodes.Status201Created).ProducesValidationProblem().Produces(StatusCodes.Status409Conflict);
         group.MapPut("/{id:guid}", UpdateAppUser).WithName("UpdateAppUser").Produces<AppUserDTO>(StatusCodes.Status200OK).ProducesValidationProblem().Produces(StatusCodes.Status404NotFound).Produces(StatusCodes.Status409Conflict);
@@ -23,6 +24,11 @@ public static class AppUserEndpoints
     private static async Task<IResult> GetAppUsers(AppUserRepository repository, CancellationToken cancellationToken)
     {
         return Results.Ok(await repository.GetAllAsync(cancellationToken));
+    }
+
+    private static async Task<IResult> GetCustomers(AppUserRepository repository, CancellationToken cancellationToken)
+    {
+        return Results.Ok(await repository.GetByUserTypeAsync((int)UserType.Customer, cancellationToken));
     }
 
     private static async Task<IResult> GetAppUser(Guid id, AppUserRepository repository, CancellationToken cancellationToken)

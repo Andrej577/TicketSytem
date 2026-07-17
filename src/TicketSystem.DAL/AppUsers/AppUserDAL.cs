@@ -5,13 +5,13 @@ using TicketSystem.Shared.DTO;
 
 namespace TicketSystem.DAL.AppUsers;
 
-public sealed class AppUserRepository
+public sealed class AppUserDAL
 {
     private const string AppUserTable = "AppUser";
 
     private readonly NpgsqlDataSource dataSource;
 
-    public AppUserRepository(NpgsqlDataSource dataSource)
+    public AppUserDAL(NpgsqlDataSource dataSource)
     {
         this.dataSource = dataSource;
     }
@@ -32,6 +32,15 @@ public sealed class AppUserRepository
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
+        return (await connection.QueryAsync<AppUserDTO>(command)).ToList();
+    }
+
+    public async Task<IReadOnlyList<AppUserDTO>> GetByUserTypeAsync(int userTypeId, CancellationToken cancellationToken)
+    {
+        var sql = $"SELECT Id, Email, UserTypeId, CreatedAt, UpdatedAt, UpdatedByUserId FROM {AppUserTable} WHERE UserTypeId = @UserTypeId ORDER BY CreatedAt DESC;";
+
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(sql, new { UserTypeId = userTypeId }, cancellationToken: cancellationToken);
         return (await connection.QueryAsync<AppUserDTO>(command)).ToList();
     }
 
