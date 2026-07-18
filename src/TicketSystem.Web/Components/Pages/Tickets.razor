@@ -4,64 +4,6 @@
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
     <MudStack Spacing="4">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-            <MudText Typo="Typo.h4">Inbox</MudText>
-            <MudButton Href="/tickets/new"
-                       Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Outlined.Add">
-                New ticket
-            </MudButton>
-        </MudStack>
 
-        <MudTable T="string" Items="@(Array.Empty<string>())" Hover="true" Bordered="true" Elevation="1">
-            <ToolBarContent>
-                <MudGrid Class="flex-grow-1 pa-2">
-                    <MudItem xs="12" md="4">
-                        <MudTextField T="string"
-                                      Placeholder="Search tickets..."
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Outlined.Search"
-                                      Disabled="true" />
-                    </MudItem>
-                    <MudItem xs="6" sm="3" md="2">
-                        <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true" FullWidth="true">Status: All</MudButton>
-                    </MudItem>
-                    <MudItem xs="6" sm="3" md="2">
-                        <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true" FullWidth="true">Priority: All</MudButton>
-                    </MudItem>
-                    <MudItem xs="6" sm="3" md="2">
-                        <MudButton Variant="Variant.Outlined" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true" FullWidth="true">Technician</MudButton>
-                    </MudItem>
-                    <MudItem xs="6" sm="3" md="2">
-                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Outlined.FilterList" EndIcon="@Icons.Material.Outlined.ExpandMore" Disabled="true" FullWidth="true">More filters</MudButton>
-                    </MudItem>
-                </MudGrid>
-            </ToolBarContent>
-            <HeaderContent>
-                <MudTh>ID</MudTh>
-                <MudTh>Ticket / User</MudTh>
-                <MudTh>Category</MudTh>
-                <MudTh>Priority</MudTh>
-                <MudTh>SLA due</MudTh>
-                <MudTh>Status</MudTh>
-                <MudTh>Assignee</MudTh>
-            </HeaderContent>
-            <NoRecordsContent>
-                <MudStack AlignItems="AlignItems.Center" Spacing="1" Class="pa-8">
-                    <MudIcon Icon="@Icons.Material.Outlined.Inbox" Size="Size.Large" Color="Color.Primary" />
-                    <MudText Typo="Typo.subtitle1">No tickets yet</MudText>
-                    <MudText Typo="Typo.body2">Tickets will appear here when data is connected.</MudText>
-                    <MudButton Href="/tickets/new"
-                               Variant="Variant.Text"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Outlined.Add">
-                        Create a ticket
-                    </MudButton>
-                </MudStack>
-            </NoRecordsContent>
-        </MudTable>
     </MudStack>
 </MudContainer>

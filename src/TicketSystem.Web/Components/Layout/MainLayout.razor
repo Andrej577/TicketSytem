@@ -7,13 +7,14 @@
 
 <MudLayout>
     <MudAppBar>
-        <MudText Typo="Typo.h6">Ticket System</MudText>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudText Typo="Typo.h6">Ticket System</MudText>
+            <MudButton Href="/" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Dashboard">Overview</MudButton>
+            <MudButton Href="/tickets" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Inbox">Tickets</MudButton>
+            <MudButton Href="/users" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.People">Users</MudButton>
+            <MudButton Href="/knowledge-base" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.MenuBook">Knowledge base</MudButton>
+        </MudStack>
         <MudSpacer />
-        <MudButton Href="/" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Dashboard">Overview</MudButton>
-        <MudButton Href="/tickets" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Inbox">Inbox</MudButton>
-        <MudButton Href="/tickets/new" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Add">New ticket</MudButton>
-        <MudButton Href="/users" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.People">Users</MudButton>
-        <MudButton Href="/knowledge-base" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.MenuBook">Knowledge base</MudButton>
         <MudIconButton Icon="@Icons.Material.Outlined.Search" Color="Color.Inherit" aria-label="Search" />
         <MudIconButton Icon="@Icons.Material.Outlined.NotificationsNone" Color="Color.Inherit" aria-label="Notifications" />
         <MudAvatar Color="Color.Primary" Size="Size.Small"><MudIcon Icon="@Icons.Material.Outlined.Person" /></MudAvatar>
