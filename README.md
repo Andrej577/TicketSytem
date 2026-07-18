@@ -7,7 +7,7 @@ This repository contains a ticket system with PostgreSQL persistence, a Blazor W
 - `TicketSystem.sln` - Visual Studio solution file for the application.
 - `src/TicketSystem.Api` - ASP.NET Core HTTP API that applies pending database migrations during startup.
 - `src/TicketSystem.DAL/Database/DatabaseMigrations.cs` - ordered PostgreSQL schema migrations.
-- `schema.sql` - standalone mirror of the current `UpgradeTo1` baseline for creating or inspecting an empty database.
+- `schema.sql` - standalone mirror of the current schema after all migrations for creating or inspecting an empty database.
 - `src/TicketSystem.Shared` - DTOs and enums shared by the API and Web projects.
 - `global.json` - pins the local SDK to .NET 8 for Visual Studio 2022 compatibility.
 - `src/TicketSystem.Web` - Blazor Web App project configured for MudBlazor and server interactivity.
@@ -81,13 +81,15 @@ The `Ticket` table represents a concrete support request.
 
 - `Id` is a `uuid` primary key.
 - `TicketNumber` is an auto-incrementing business number that is useful for displaying tickets to users.
-- `ChatSessionId` links the ticket to `ChatSession.Id`.
+- `ChatSessionId` optionally links the ticket to `ChatSession.Id` after the first message creates a chat session.
 - `CustomerId` identifies the customer who opened the ticket and references `AppUser.Id`.
 - `OperatorId` identifies the assigned operator and references `AppUser.Id`.
 - `Title` and `Content` store the request title and initial problem description.
 - `StatusId` references `TicketStatus.Id`.
 - `PriorityId` references `TicketPriority.Id`.
 - `CreatedAt`, `UpdatedAt`, and nullable `ClosedAt` store lifecycle timestamps.
+- `IsDeleted` marks a ticket as soft-deleted without removing its data.
+- `UpdatedByUserId` identifies the user responsible for the latest change and references `AppUser.Id`.
 
 In the simple flow, one ticket has one chat session. If multiple conversations are needed for the same ticket later, the relationship can be adjusted so that `ChatSession` contains a `TicketId` reference.
 
@@ -123,13 +125,12 @@ The `Knowledge` table stores knowledge-base articles.
 
 ## Suggested Flow
 
-1. A customer starts a new support request.
-2. The application creates a `ChatSession` record.
-3. The application creates a `Ticket` record linked through `ChatSessionId`.
-4. The customer's first message can be stored as a `Message` with the same `ChatSessionId` and `TicketId`.
-5. SignalR sends messages to the group connected to `ChatSessionId`.
-6. Every sent message is stored in `Message`, so the chat history can be loaded from the database.
-7. When a customer or operator opens the conversation, the application inserts rows into `MessageRead` for the seen messages.
+1. A customer or technician creates a `Ticket` record without a chat session.
+2. The first message creates a `ChatSession` and links it to the ticket through `ChatSessionId`.
+3. The first message is stored as a `Message` with the same `ChatSessionId` and `TicketId`.
+4. SignalR sends messages to the group connected to `ChatSessionId`.
+5. Every sent message is stored in `Message`, so the chat history can be loaded from the database.
+6. When a customer or operator opens the conversation, the application inserts rows into `MessageRead` for the seen messages.
 
 ## Potential UI Mock
 
@@ -224,4 +225,4 @@ This is the preferred mock because it balances ticket context, chat history, and
 
 ## Database migrations
 
-The API applies pending migrations from `DatabaseMigrations.All` during startup and records every applied version in the `DatabaseVersion` table. The root `schema.sql` file mirrors the complete `UpgradeTo1` baseline and can also be used to create an empty database manually. Both definitions must remain synchronized. See `deploy/README.md` for the container startup workflow.
+The API applies pending migrations from `DatabaseMigrations.All` during startup and records every applied version in the `DatabaseVersion` table. The root `schema.sql` file mirrors the complete current schema and can also be used to create an empty database manually. Both definitions must remain synchronized. See `deploy/README.md` for the container startup workflow.

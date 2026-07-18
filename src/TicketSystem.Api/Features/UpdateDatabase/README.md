@@ -5,8 +5,8 @@ TicketSystem API. It is not an Entity Framework migration setup. The updater
 runs numbered SQL migrations when the API starts.
 
 `DatabaseMigrations` is the runtime source of truth. The root `schema.sql` file
-mirrors the complete `UpgradeTo1` baseline so the schema can also be inspected
-or created manually.
+mirrors the complete current schema after all migrations so the schema can also
+be inspected or created manually.
 
 ## Startup Flow
 
@@ -45,15 +45,16 @@ applied. A version already present in `DatabaseVersion` is skipped.
 Migration methods are named after their target version:
 
 ```csharp
-public static int DatabaseVersion { get; } = 1;
+public static int DatabaseVersion { get; } = 2;
 
 public static IReadOnlyList<DatabaseMigration> All { get; } =
 [
-    new(1, UpgradeTo1())
+    new(1, UpgradeTo1()),
+    new(2, UpgradeTo2())
 ];
 ```
 
-The next schema change must use version `2` and method `UpgradeTo2()`. Never
+The next schema change must use version `3` and method `UpgradeTo3()`. Never
 reuse an applied version number for different SQL. Once a baseline is used by a
 shared database, preserve it and add a new migration instead of changing it.
 
@@ -86,6 +87,14 @@ both `Id` and `UpdatedByUserId`:
 2d6781ce-863a-4ca4-83c3-c4d521f8e23d
 ```
 
+## UpgradeTo2 Ticket Changes
+
+`UpgradeTo2()` makes `Ticket.ChatSessionId` optional, adds the required
+`Ticket.IsDeleted` soft-delete marker, and adds `Ticket.UpdatedByUserId`. Existing
+tickets are backfilled with the fixed administrator ID before the audit column
+is made required. The audit column references `AppUser.Id` with `ON DELETE
+RESTRICT` and has a supporting index.
+
 ## Adding a Migration
 
 To add the next database change:
@@ -98,15 +107,16 @@ To add the next database change:
 Example:
 
 ```csharp
-public static int DatabaseVersion { get; } = 2;
+public static int DatabaseVersion { get; } = 3;
 
 public static IReadOnlyList<DatabaseMigration> All { get; } =
 [
     new(1, UpgradeTo1()),
-    new(2, UpgradeTo2())
+    new(2, UpgradeTo2()),
+    new(3, UpgradeTo3())
 ];
 
-private static string UpgradeTo2()
+private static string UpgradeTo3()
 {
     return """
         ALTER TABLE "Ticket"
@@ -163,5 +173,5 @@ version-tracking table instead of only restarting the API.
 - A later migration failure does not roll back earlier committed migrations.
 - The configured database user must have permission to create the required
   extension and schema objects.
-- Keep `schema.sql` synchronized with `UpgradeTo1` whenever the initial baseline
-  is intentionally changed before it is shared.
+- Keep `schema.sql` synchronized with the complete current schema after every
+  migration.

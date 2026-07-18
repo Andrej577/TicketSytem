@@ -2,11 +2,12 @@ namespace TicketSystem.DAL.Database;
 
 public static class DatabaseMigrations
 {
-    public static int DatabaseVersion { get; } = 1;
+    public static int DatabaseVersion { get; } = 2;
 
     public static IReadOnlyList<DatabaseMigration> All { get; } =
     [
-        new(1, UpgradeTo1())
+        new(1, UpgradeTo1()),
+        new(2, UpgradeTo2())
     ];
 
     private static string UpgradeTo1()
@@ -264,6 +265,32 @@ public static class DatabaseMigrations
                 now(),
                 '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'
             );
+            """;
+    }
+
+    private static string UpgradeTo2()
+    {
+        return """
+            ALTER TABLE "Ticket"
+            ALTER COLUMN "ChatSessionId" DROP NOT NULL;
+
+            ALTER TABLE "Ticket"
+            ADD COLUMN "IsDeleted" boolean NOT NULL DEFAULT false;
+
+            ALTER TABLE "Ticket"
+            ADD COLUMN "UpdatedByUserId" uuid;
+
+            UPDATE "Ticket"
+            SET "UpdatedByUserId" = '2d6781ce-863a-4ca4-83c3-c4d521f8e23d';
+
+            ALTER TABLE "Ticket"
+            ALTER COLUMN "UpdatedByUserId" SET NOT NULL;
+
+            ALTER TABLE "Ticket"
+            ADD CONSTRAINT "FK_TicketUpdatedByUserIdAppUser"
+            FOREIGN KEY ("UpdatedByUserId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
+
+            CREATE INDEX "IXTicketUpdatedByUserId" ON "Ticket" ("UpdatedByUserId");
             """;
     }
 }

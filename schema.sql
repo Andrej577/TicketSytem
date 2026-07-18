@@ -69,7 +69,7 @@ CREATE TABLE "ChatSession" (
 CREATE TABLE "Ticket" (
     "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "TicketNumber" bigint NOT NULL DEFAULT nextval('"TicketNumberSequence"'),
-    "ChatSessionId" uuid NOT NULL,
+    "ChatSessionId" uuid,
     "CustomerId" uuid NOT NULL,
     "OperatorId" uuid,
     "Title" varchar(200) NOT NULL,
@@ -79,6 +79,8 @@ CREATE TABLE "Ticket" (
     "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
     "UpdatedAt" timestamp with time zone NOT NULL DEFAULT now(),
     "ClosedAt" timestamp with time zone,
+    "IsDeleted" boolean NOT NULL DEFAULT false,
+    "UpdatedByUserId" uuid NOT NULL,
     CONSTRAINT "PK_Ticket" PRIMARY KEY ("Id"),
     CONSTRAINT "UQ_TicketTicketNumber" UNIQUE ("TicketNumber")
 );
@@ -149,6 +151,10 @@ ALTER TABLE "Ticket"
 ADD CONSTRAINT "FK_TicketPriorityIdTicketPriority"
 FOREIGN KEY ("PriorityId") REFERENCES "TicketPriority" ("Id") ON DELETE RESTRICT;
 
+ALTER TABLE "Ticket"
+ADD CONSTRAINT "FK_TicketUpdatedByUserIdAppUser"
+FOREIGN KEY ("UpdatedByUserId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
+
 ALTER TABLE "Message"
 ADD CONSTRAINT "FK_MessageChatSessionIdChatSession"
 FOREIGN KEY ("ChatSessionId") REFERENCES "ChatSession" ("Id") ON DELETE CASCADE;
@@ -200,6 +206,8 @@ CREATE INDEX "IXTicketOperatorId" ON "Ticket" ("OperatorId");
 CREATE INDEX "IXTicketStatusId" ON "Ticket" ("StatusId");
 
 CREATE INDEX "IXTicketPriorityId" ON "Ticket" ("PriorityId");
+
+CREATE INDEX "IXTicketUpdatedByUserId" ON "Ticket" ("UpdatedByUserId");
 
 CREATE INDEX "IXMessageChatSessionIdSentAt" ON "Message" ("ChatSessionId", "SentAt");
 

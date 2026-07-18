@@ -6,7 +6,7 @@ public sealed class TicketDTO
 
     public long TicketNumber { get; set; }
 
-    public Guid ChatSessionId { get; set; }
+    public Guid? ChatSessionId { get; set; }
 
     public Guid CustomerId { get; set; }
 
@@ -25,4 +25,8 @@ public sealed class TicketDTO
     public DateTimeOffset UpdatedAt { get; set; }
 
     public DateTimeOffset? ClosedAt { get; set; }
+
+    public bool IsDeleted { get; set; }
+
+    public Guid UpdatedByUserId { get; set; }
 }
