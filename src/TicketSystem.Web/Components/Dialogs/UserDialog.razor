@@ -6,56 +6,60 @@
 @inject IHttpClientFactory HttpClientFactory
 @inject ISnackbar Snackbar
 
-<MudDialog Class="user-dialog">
+<MudDialog>
     <DialogContent>
-        <div class="user-dialog-intro">
-            <span class="user-dialog-icon">
-                <MudIcon Icon="@(_isEditMode ? Icons.Material.Outlined.ManageAccounts : Icons.Material.Outlined.PersonAdd)" />
-            </span>
-            <div>
-                <MudText Typo="Typo.subtitle1">@(_isEditMode ? "Edit user account" : "Create a user account")</MudText>
-                <MudText Typo="Typo.body2">@_dialogDescription</MudText>
-            </div>
-        </div>
+        <MudStack Spacing="3">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudAvatar Color="Color.Primary">
+                    <MudIcon Icon="@(_isEditMode ? Icons.Material.Outlined.ManageAccounts : Icons.Material.Outlined.PersonAdd)" />
+                </MudAvatar>
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.subtitle1">@(_isEditMode ? "Edit user account" : "Create a user account")</MudText>
+                    <MudText Typo="Typo.body2">@_dialogDescription</MudText>
+                </MudStack>
+            </MudStack>
 
-        @if (!string.IsNullOrWhiteSpace(_errorMessage))
-        {
-            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true" Class="user-dialog-error">
-                @_errorMessage
-            </MudAlert>
-        }
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+                    @_errorMessage
+                </MudAlert>
+            }
 
-        <MudForm @ref="_form" Class="user-dialog-form">
-            <MudTextField T="string"
-                          Label="Email address"
-                          Placeholder="user@example.com"
-                          Variant="Variant.Outlined"
-                          InputType="InputType.Email"
-                          @bind-Value="_model.Email"
-                          Validation="@(new Func<string, string?>(ValidateEmail))"
-                          Immediate="true"
-                          Disabled="_isSubmitting" />
+            <MudForm @ref="_form">
+                <MudStack Spacing="2">
+                    <MudTextField T="string"
+                                  Label="Email address"
+                                  Placeholder="user@example.com"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Email"
+                                  @bind-Value="_model.Email"
+                                  Validation="@(new Func<string, string?>(ValidateEmail))"
+                                  Immediate="true"
+                                  Disabled="_isSubmitting" />
 
-            <MudTextField T="string"
-                          Label="@(_isEditMode ? "New password (optional)" : "Password")"
-                          Placeholder="@(_isEditMode ? "Leave blank to keep the current password" : "Enter a password")"
-                          Variant="Variant.Outlined"
-                          InputType="InputType.Password"
-                          @bind-Value="_model.Password"
-                          Validation="@(new Func<string, string?>(ValidatePassword))"
-                          Immediate="true"
-                          Disabled="_isSubmitting" />
+                    <MudTextField T="string"
+                                  Label="@(_isEditMode ? "New password (optional)" : "Password")"
+                                  Placeholder="@(_isEditMode ? "Leave blank to keep the current password" : "Enter a password")"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Password"
+                                  @bind-Value="_model.Password"
+                                  Validation="@(new Func<string, string?>(ValidatePassword))"
+                                  Immediate="true"
+                                  Disabled="_isSubmitting" />
 
-            <MudTextField T="string"
-                          Label="@(_isEditMode ? "Confirm new password" : "Confirm password")"
-                          Placeholder="@(_isEditMode ? "Repeat the new password" : "Repeat the password")"
-                          Variant="Variant.Outlined"
-                          InputType="InputType.Password"
-                          @bind-Value="_model.ConfirmPassword"
-                          Validation="@(new Func<string, string?>(ValidatePasswordConfirmation))"
-                          Immediate="true"
-                          Disabled="_isSubmitting" />
-        </MudForm>
+                    <MudTextField T="string"
+                                  Label="@(_isEditMode ? "Confirm new password" : "Confirm password")"
+                                  Placeholder="@(_isEditMode ? "Repeat the new password" : "Repeat the password")"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Password"
+                                  @bind-Value="_model.ConfirmPassword"
+                                  Validation="@(new Func<string, string?>(ValidatePasswordConfirmation))"
+                                  Immediate="true"
+                                  Disabled="_isSubmitting" />
+                </MudStack>
+            </MudForm>
+        </MudStack>
     </DialogContent>
 
     <DialogActions>

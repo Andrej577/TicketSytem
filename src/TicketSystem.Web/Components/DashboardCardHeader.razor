@@ -1,10 +1,10 @@
-<header class="dashboard-card-header">
-    <div>
+<MudStack Row="true" Justify="Justify.SpaceBetween">
+    <MudStack Spacing="0">
         <MudText Typo="Typo.subtitle2">@Title</MudText>
         <MudText Typo="Typo.caption">@Subtitle</MudText>
-    </div>
+    </MudStack>
     <MudIconButton Icon="@Icons.Material.Outlined.MoreHoriz" Size="Size.Small" Disabled="true" aria-label="More options" />
-</header>
+</MudStack>
 
 @code {
     [Parameter, EditorRequired]

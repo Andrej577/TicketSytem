@@ -6,84 +6,52 @@
 
 <PageTitle>Users | Ticket System</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="user-list-page">
-    <header class="user-list-heading">
-        <div>
-            <MudText Typo="Typo.h4" Class="user-list-title">Users</MudText>
-        </div>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Outlined.PersonAdd"
-                   OnClick="OpenCreateUsersDialogAsync"
-                   Disabled="_isLoading"
-                   Class="user-create-button">
-            New user
-        </MudButton>
-    </header>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h4">Users</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.PersonAdd" OnClick="OpenCreateUsersDialogAsync" Disabled="_isLoading">
+                New user
+            </MudButton>
+        </MudStack>
 
-    <section class="user-table-shell" aria-label="User list">
         @if (!string.IsNullOrWhiteSpace(_loadErrorMessage))
         {
-            <div class="user-table-empty">
-                <span class="user-table-empty-icon user-table-empty-icon--error"><MudIcon Icon="@Icons.Material.Outlined.CloudOff" /></span>
-                <MudText Typo="Typo.subtitle1">Users could not be loaded</MudText>
-                <MudText Typo="Typo.body2">@_loadErrorMessage</MudText>
-                <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="LoadUsersAsync">Try again</MudButton>
-            </div>
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.subtitle1">Users could not be loaded</MudText>
+                    <MudText Typo="Typo.body2">@_loadErrorMessage</MudText>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="LoadUsersAsync">Try again</MudButton>
+                </MudStack>
+            </MudAlert>
         }
         else
         {
-            <MudDataGrid T="AppUserPOCO"
-                         @ref="_usersGrid"
-                         Items="@_users"
-                         QuickFilter="@UserQuickFilter"
-                         Filterable="true"
+            <MudDataGrid T="AppUserPOCO" @ref="_usersGrid" Items="@_users" QuickFilter="@UserQuickFilter" Filterable="true"
                          FilterMode="DataGridFilterMode.ColumnFilterMenu"
-                         FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
-                         ShowFilterIcons="true"
-                         SortMode="SortMode.Multiple"
-                         ReadOnly="true"
-                         Hover="true"
-                         Dense="false"
-                         Loading="_isLoading"
-                         LoadingProgressColor="Color.Primary"
-                         Bordered="false"
-                         Elevation="0"
-                         RowsPerPage="10"
-                         Class="user-data-grid">
+                         FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive" ShowFilterIcons="true"
+                         SortMode="SortMode.Multiple" ReadOnly="true" Hover="true" Loading="_isLoading"
+                         LoadingProgressColor="Color.Primary" RowsPerPage="10">
                 <ToolBarContent>
-                    <div class="user-grid-toolbar">
-                        <div class="user-grid-toolbar-copy">
-                            <MudText Typo="Typo.subtitle2">User directory</MudText>
-                            <MudText Typo="Typo.caption">@_userTotalText</MudText>
-                        </div>
-                        <MudSpacer />
-                        <MudTextField T="string"
-                                      @bind-Value="_searchText"
-                                      Placeholder="Search users..."
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      Immediate="true"
-                                      Adornment="Adornment.Start"
-                                      AdornmentIcon="@Icons.Material.Outlined.Search"
-                                      Class="user-grid-search" />
-                    </div>
+                    <MudText Typo="Typo.subtitle2">User directory</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@_userTotalText</MudText>
+                    <MudSpacer />
+                    <MudTextField T="string" @bind-Value="_searchText" Placeholder="Search users..." Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" Immediate="true" Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Outlined.Search" />
                 </ToolBarContent>
                 <Columns>
                     <PropertyColumn Property="user => user.Email" Title="User / Email">
                         <CellTemplate Context="cell">
-                            <div class="user-table-user">
-                                <span class="user-table-avatar" aria-hidden="true">@GetEmailInitial(cell.Item.Email)</span>
-                                <div class="user-table-user-copy">
-                                    <strong title="@cell.Item.Email">@cell.Item.Email</strong>
-                                    <small>User account</small>
-                                </div>
-                            </div>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudAvatar Color="Color.Primary" Size="Size.Small">@GetEmailInitial(cell.Item.Email)</MudAvatar>
+                                <MudText Typo="Typo.body2">@cell.Item.Email</MudText>
+                            </MudStack>
                         </CellTemplate>
                     </PropertyColumn>
                     <PropertyColumn Property="user => user.UserTypeName" Title="Type">
                         <CellTemplate Context="cell">
-                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@cell.Item.UserTypeName</MudChip>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary">@cell.Item.UserTypeName</MudChip>
                         </CellTemplate>
                     </PropertyColumn>
                     <PropertyColumn Property="user => user.CreatedAt.DateTime" Title="Created" Format="dd MMM yyyy, HH:mm" Culture="@CultureInfo.InvariantCulture" />
@@ -91,42 +59,36 @@
                     <PropertyColumn Property="user => user.UpdatedByUserEmail" Title="Updated by" />
                     <TemplateColumn Title="Actions" Sortable="false" Filterable="false" ShowFilterIcon="false">
                         <CellTemplate Context="cell">
-                            <div class="user-table-actions">
-                                <MudButton Variant="Variant.Text"
-                                           Color="Color.Primary"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Outlined.Edit"
-                                           OnClick="@(() => OpenEditUsersDialogAsync(cell.Item))">
-                                    Edit
-                                </MudButton>
-                            </div>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Outlined.Edit" OnClick="@(() => OpenEditUsersDialogAsync(cell.Item))">
+                                Edit
+                            </MudButton>
                         </CellTemplate>
                     </TemplateColumn>
                 </Columns>
                 <LoadingContent>
-                    <div class="user-table-empty" role="status">
+                    <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-6">
                         <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
                         <MudText Typo="Typo.body2">Loading users...</MudText>
-                    </div>
+                    </MudStack>
                 </LoadingContent>
                 <NoRecordsContent>
                     @if (_users.Count == 0)
                     {
-                        <div class="user-table-empty">
-                            <span class="user-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.PeopleOutline" /></span>
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-6">
+                            <MudIcon Icon="@Icons.Material.Outlined.PeopleOutline" Size="Size.Large" Color="Color.Primary" />
                             <MudText Typo="Typo.subtitle1">No users yet</MudText>
                             <MudText Typo="Typo.body2">Create the first user account to see it here.</MudText>
                             <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.PersonAdd" OnClick="OpenCreateUsersDialogAsync">Add a user</MudButton>
-                        </div>
+                        </MudStack>
                     }
                     else
                     {
-                        <div class="user-table-empty">
-                            <span class="user-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.SearchOff" /></span>
+                        <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-6">
+                            <MudIcon Icon="@Icons.Material.Outlined.SearchOff" Size="Size.Large" Color="Color.Primary" />
                             <MudText Typo="Typo.subtitle1">No matching users</MudText>
                             <MudText Typo="Typo.body2">Clear the search or column filters to see all users.</MudText>
                             <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.FilterAltOff" OnClick="ClearGridFiltersAsync">Clear filters</MudButton>
-                        </div>
+                        </MudStack>
                     }
                 </NoRecordsContent>
                 <PagerContent>
@@ -134,7 +96,7 @@
                 </PagerContent>
             </MudDataGrid>
         }
-    </section>
+    </MudStack>
 </MudContainer>
 
 @code {

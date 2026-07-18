@@ -1,36 +1,25 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="TicketSystemTheme.Default" IsDarkMode="true" />
+<MudThemeProvider IsDarkMode="true" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout Class="ticket-layout">
-    <MudAppBar Elevation="0" Class="ticket-appbar">
-        <MudLink Href="/" Underline="Underline.None" Class="ticket-brand">
-            <span class="ticket-logo">T</span>
-            <span class="ticket-brand-copy">
-                <strong>Ticket <span>System</span></strong>
-                <small>SUPPORT</small>
-            </span>
-        </MudLink>
-
-        <nav class="ticket-navigation" aria-label="Main navigation">
-            <NavLink href="/" Match="NavLinkMatch.All" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.Dashboard" />Overview</NavLink>
-            <NavLink href="/tickets" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.Inbox" />Inbox</NavLink>
-            <NavLink href="/tickets/new" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.Add" />New ticket</NavLink>
-            <NavLink href="/users" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.People" />Users</NavLink>
-            <NavLink href="/knowledge-base" class="ticket-nav-link"><MudIcon Icon="@Icons.Material.Outlined.MenuBook" />Knowledge base</NavLink>
-        </nav>
-
+<MudLayout>
+    <MudAppBar>
+        <MudText Typo="Typo.h6">Ticket System</MudText>
         <MudSpacer />
-
-        <MudIconButton Icon="@Icons.Material.Outlined.Search" Class="ticket-header-action" aria-label="Search" />
-        <MudIconButton Icon="@Icons.Material.Outlined.NotificationsNone" Class="ticket-header-action" aria-label="Notifications" />
-        <MudAvatar Class="ticket-user-placeholder"><MudIcon Icon="@Icons.Material.Outlined.Person" /></MudAvatar>
+        <MudButton Href="/" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Dashboard">Overview</MudButton>
+        <MudButton Href="/tickets" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Inbox">Inbox</MudButton>
+        <MudButton Href="/tickets/new" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Add">New ticket</MudButton>
+        <MudButton Href="/users" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.People">Users</MudButton>
+        <MudButton Href="/knowledge-base" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.MenuBook">Knowledge base</MudButton>
+        <MudIconButton Icon="@Icons.Material.Outlined.Search" Color="Color.Inherit" aria-label="Search" />
+        <MudIconButton Icon="@Icons.Material.Outlined.NotificationsNone" Color="Color.Inherit" aria-label="Notifications" />
+        <MudAvatar Color="Color.Primary" Size="Size.Small"><MudIcon Icon="@Icons.Material.Outlined.Person" /></MudAvatar>
     </MudAppBar>
 
-    <MudMainContent Class="ticket-main">
+    <MudMainContent>
         @Body
     </MudMainContent>
 </MudLayout>
