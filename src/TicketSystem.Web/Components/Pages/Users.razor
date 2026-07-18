@@ -1,0 +1,281 @@
+@page "/users"
+@using System.Globalization
+@using System.Text.Json
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Users | Ticket System</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.False" Class="user-list-page">
+    <header class="user-list-heading">
+        <div>
+            <MudText Typo="Typo.h4" Class="user-list-title">Users</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Outlined.PersonAdd"
+                   OnClick="OpenCreateUsersDialogAsync"
+                   Disabled="_isLoading"
+                   Class="user-create-button">
+            New user
+        </MudButton>
+    </header>
+
+    <section class="user-table-shell" aria-label="User list">
+        @if (!string.IsNullOrWhiteSpace(_loadErrorMessage))
+        {
+            <div class="user-table-empty">
+                <span class="user-table-empty-icon user-table-empty-icon--error"><MudIcon Icon="@Icons.Material.Outlined.CloudOff" /></span>
+                <MudText Typo="Typo.subtitle1">Users could not be loaded</MudText>
+                <MudText Typo="Typo.body2">@_loadErrorMessage</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="LoadUsersAsync">Try again</MudButton>
+            </div>
+        }
+        else
+        {
+            <MudDataGrid T="AppUserPOCO"
+                         @ref="_usersGrid"
+                         Items="@_users"
+                         QuickFilter="@UserQuickFilter"
+                         Filterable="true"
+                         FilterMode="DataGridFilterMode.ColumnFilterMenu"
+                         FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
+                         ShowFilterIcons="true"
+                         SortMode="SortMode.Multiple"
+                         ReadOnly="true"
+                         Hover="true"
+                         Dense="false"
+                         Loading="_isLoading"
+                         LoadingProgressColor="Color.Primary"
+                         Bordered="false"
+                         Elevation="0"
+                         RowsPerPage="10"
+                         Class="user-data-grid">
+                <ToolBarContent>
+                    <div class="user-grid-toolbar">
+                        <div class="user-grid-toolbar-copy">
+                            <MudText Typo="Typo.subtitle2">User directory</MudText>
+                            <MudText Typo="Typo.caption">@_userTotalText</MudText>
+                        </div>
+                        <MudSpacer />
+                        <MudTextField T="string"
+                                      @bind-Value="_searchText"
+                                      Placeholder="Search users..."
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Immediate="true"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Outlined.Search"
+                                      Class="user-grid-search" />
+                    </div>
+                </ToolBarContent>
+                <Columns>
+                    <PropertyColumn Property="user => user.Email" Title="User / Email">
+                        <CellTemplate Context="cell">
+                            <div class="user-table-user">
+                                <span class="user-table-avatar" aria-hidden="true">@GetEmailInitial(cell.Item.Email)</span>
+                                <div class="user-table-user-copy">
+                                    <strong title="@cell.Item.Email">@cell.Item.Email</strong>
+                                    <small>User account</small>
+                                </div>
+                            </div>
+                        </CellTemplate>
+                    </PropertyColumn>
+                    <PropertyColumn Property="user => user.UserTypeName" Title="Type">
+                        <CellTemplate Context="cell">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@cell.Item.UserTypeName</MudChip>
+                        </CellTemplate>
+                    </PropertyColumn>
+                    <PropertyColumn Property="user => user.CreatedAt.DateTime" Title="Created" Format="dd MMM yyyy, HH:mm" Culture="@CultureInfo.InvariantCulture" />
+                    <PropertyColumn Property="user => user.UpdatedAt.DateTime" Title="Updated" Format="dd MMM yyyy, HH:mm" Culture="@CultureInfo.InvariantCulture" />
+                    <PropertyColumn Property="user => user.UpdatedByUserEmail" Title="Updated by" />
+                    <TemplateColumn Title="Actions" Sortable="false" Filterable="false" ShowFilterIcon="false">
+                        <CellTemplate Context="cell">
+                            <div class="user-table-actions">
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Outlined.Edit"
+                                           OnClick="@(() => OpenEditUsersDialogAsync(cell.Item))">
+                                    Edit
+                                </MudButton>
+                            </div>
+                        </CellTemplate>
+                    </TemplateColumn>
+                </Columns>
+                <LoadingContent>
+                    <div class="user-table-empty" role="status">
+                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                        <MudText Typo="Typo.body2">Loading users...</MudText>
+                    </div>
+                </LoadingContent>
+                <NoRecordsContent>
+                    @if (_users.Count == 0)
+                    {
+                        <div class="user-table-empty">
+                            <span class="user-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.PeopleOutline" /></span>
+                            <MudText Typo="Typo.subtitle1">No users yet</MudText>
+                            <MudText Typo="Typo.body2">Create the first user account to see it here.</MudText>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.PersonAdd" OnClick="OpenCreateUsersDialogAsync">Add a user</MudButton>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="user-table-empty">
+                            <span class="user-table-empty-icon"><MudIcon Icon="@Icons.Material.Outlined.SearchOff" /></span>
+                            <MudText Typo="Typo.subtitle1">No matching users</MudText>
+                            <MudText Typo="Typo.body2">Clear the search or column filters to see all users.</MudText>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.FilterAltOff" OnClick="ClearGridFiltersAsync">Clear filters</MudButton>
+                        </div>
+                    }
+                </NoRecordsContent>
+                <PagerContent>
+                    <MudDataGridPager T="AppUserPOCO" />
+                </PagerContent>
+            </MudDataGrid>
+        }
+    </section>
+</MudContainer>
+
+@code {
+    private List<AppUserPOCO> _users = [];
+    private MudDataGrid<AppUserPOCO>? _usersGrid;
+    private string _searchText = string.Empty;
+    private string? _loadErrorMessage;
+    private bool _isLoading = true;
+
+    private string _userTotalText => _users.Count == 1 ? "1 user" : $"{_users.Count} users";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await LoadUsersAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        _isLoading = true;
+        _loadErrorMessage = null;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            using var response = await client.GetAsync("api/app-users/users-with-email-edited");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _loadErrorMessage = "The API returned an error while loading users.";
+                return;
+            }
+
+            _users = await response.Content.ReadFromJsonAsync<List<AppUserPOCO>>() ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            _loadErrorMessage = "The API is currently unavailable. Please try again later.";
+        }
+        catch (JsonException)
+        {
+            _loadErrorMessage = "The API returned an invalid users response.";
+        }
+        catch (TaskCanceledException)
+        {
+            _loadErrorMessage = "The users request timed out. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OpenCreateUsersDialogAsync()
+    {
+        await OpenUsersDialogAsync(null);
+    }
+
+    private async Task OpenEditUsersDialogAsync(AppUserPOCO user)
+    {
+        await OpenUsersDialogAsync(user);
+    }
+
+    private async Task OpenUsersDialogAsync(AppUserPOCO? user)
+    {
+        var parameters = new DialogParameters();
+        if (user is not null)
+        {
+            parameters[nameof(UserDialog.User)] = user;
+        }
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            FullWidth = true,
+            MaxWidth = MaxWidth.Small,
+            BackdropClick = false
+        };
+
+        var title = user is null ? "New user" : "Edit user";
+        var dialog = await DialogService.ShowAsync<UserDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled || result.Data is not AppUserDTO savedUser)
+        {
+            return;
+        }
+
+        var savedAppUser = await CreateAppUserPOCOAsync(savedUser);
+        var existingUserIndex = _users.FindIndex(existingUser => existingUser.Id == savedAppUser.Id);
+
+        if (existingUserIndex >= 0)
+        {
+            _users[existingUserIndex] = savedAppUser;
+        }
+        else
+        {
+            _users.Insert(0, savedAppUser);
+        }
+
+        _users = [.. _users];
+        StateHasChanged();
+    }
+
+    private async Task<AppUserPOCO> CreateAppUserPOCOAsync(AppUserDTO appUser)
+    {
+        var client = HttpClientFactory.CreateClient("TicketSystemApi");
+        var updatedByUser = await client.GetFromJsonAsync<AppUserDTO>($"api/app-users/{appUser.UpdatedByUserId}");
+
+        return new AppUserPOCO(appUser)
+        {
+            UpdatedByUserEmail = updatedByUser!.Email
+        };
+    }
+
+    private bool UserQuickFilter(AppUserPOCO user)
+    {
+        if (string.IsNullOrWhiteSpace(_searchText))
+        {
+            return true;
+        }
+
+        var searchText = _searchText.Trim();
+        return user.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || user.UserTypeName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || user.UpdatedByUserEmail.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task ClearGridFiltersAsync()
+    {
+        _searchText = string.Empty;
+        await _usersGrid!.ClearFiltersAsync();
+    }
+
+    private static string GetEmailInitial(string email)
+    {
+        return email[..1].ToUpperInvariant();
+    }
+}

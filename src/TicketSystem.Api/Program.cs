@@ -19,7 +19,7 @@ builder.Services.AddSingleton(serviceProvider =>
 
     return NpgsqlDataSource.Create(connectionString);
 });
-builder.Services.AddScoped<AppUserRepository>();
+builder.Services.AddScoped<AppUserDAL>();
 
 var app = builder.Build();
 

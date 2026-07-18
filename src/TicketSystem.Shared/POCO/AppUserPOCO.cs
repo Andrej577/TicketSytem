@@ -1,14 +1,15 @@
 using TicketSystem.Shared.DTO;
+using TicketSystem.Shared.Enums;
 
-namespace TicketSystem.Web.POCO;
+namespace TicketSystem.Shared.POCO;
 
-public sealed class CustomerPOCO : AppUserDTO
+public sealed class AppUserPOCO : AppUserDTO
 {
-    public CustomerPOCO()
+    public AppUserPOCO()
     {
     }
 
-    public CustomerPOCO(AppUserDTO appUser)
+    public AppUserPOCO(AppUserDTO appUser)
     {
         Id = appUser.Id;
         Email = appUser.Email;
@@ -19,4 +20,6 @@ public sealed class CustomerPOCO : AppUserDTO
     }
 
     public string UpdatedByUserEmail { get; set; } = string.Empty;
+
+    public string UserTypeName => ((AppUserType)UserTypeId).ToString();
 }
