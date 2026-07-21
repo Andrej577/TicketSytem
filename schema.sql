@@ -20,12 +20,12 @@ CREATE TABLE "TicketStatus" (
 
 CREATE TABLE "TicketPriority" (
     "Id" smallint NOT NULL,
-    "Code" varchar(30) NOT NULL,
-    "Name" varchar(100) NOT NULL,
-    "SortOrder" smallint NOT NULL,
+    "Name" varchar(30) NOT NULL,
+    "DisplayName" varchar(100) NOT NULL,
+    "Impact" smallint NOT NULL,
     CONSTRAINT "PK_TicketPriority" PRIMARY KEY ("Id"),
-    CONSTRAINT "UQ_TicketPriorityCode" UNIQUE ("Code"),
-    CONSTRAINT "UQ_TicketPrioritySortOrder" UNIQUE ("SortOrder")
+    CONSTRAINT "UQ_TicketPriorityName" UNIQUE ("Name"),
+    CONSTRAINT "UQ_TicketPriorityImpact" UNIQUE ("Impact")
 );
 
 CREATE TABLE "KnowledgeStatus" (
@@ -235,7 +235,7 @@ VALUES
     (3, 'resolved', 'Resolved'),
     (4, 'closed', 'Closed');
 
-INSERT INTO "TicketPriority" ("Id", "Code", "Name", "SortOrder")
+INSERT INTO "TicketPriority" ("Id", "Name", "DisplayName", "Impact")
 VALUES
     (1, 'low', 'Low', 1),
     (2, 'normal', 'Normal', 2),

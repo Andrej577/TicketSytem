@@ -1,6 +1,6 @@
 using Npgsql;
 using TicketSystem.DAL.Tickets;
-using TicketSystem.Shared.DTO;
+using TicketSystem.Shared.POCO;
 
 namespace TicketSystem.Api.Features.Tickets;
 
@@ -10,10 +10,10 @@ public static class TicketEndpoints
     {
         var group = endpoints.MapGroup("/api/tickets").WithTags("Tickets");
 
-        group.MapGet("/", GetTickets).WithName("GetTickets").Produces<IReadOnlyList<TicketDTO>>(StatusCodes.Status200OK);
-        group.MapGet("/{id:guid}", GetTicket).WithName("GetTicket").Produces<TicketDTO>(StatusCodes.Status200OK).Produces(StatusCodes.Status404NotFound);
-        group.MapPost("/", CreateTicket).WithName("CreateTicket").Produces<TicketDTO>(StatusCodes.Status201Created).Produces(StatusCodes.Status409Conflict);
-        group.MapPut("/{id:guid}", UpdateTicket).WithName("UpdateTicket").Produces<TicketDTO>(StatusCodes.Status200OK).Produces(StatusCodes.Status404NotFound).Produces(StatusCodes.Status409Conflict);
+        group.MapGet("/", GetTickets).WithName("GetTickets").Produces<IReadOnlyList<TicketPOCO>>(StatusCodes.Status200OK);
+        group.MapGet("/{id:guid}", GetTicket).WithName("GetTicket").Produces<TicketPOCO>(StatusCodes.Status200OK).Produces(StatusCodes.Status404NotFound);
+        group.MapPost("/", CreateTicket).WithName("CreateTicket").Produces<TicketPOCO>(StatusCodes.Status201Created).Produces(StatusCodes.Status409Conflict);
+        group.MapPut("/{id:guid}", UpdateTicket).WithName("UpdateTicket").Produces<bool>(StatusCodes.Status200OK).Produces(StatusCodes.Status404NotFound).Produces(StatusCodes.Status409Conflict);
         group.MapDelete("/{id:guid}", DeleteTicket).WithName("DeleteTicket").Produces(StatusCodes.Status204NoContent).Produces(StatusCodes.Status404NotFound);
 
         return endpoints;
@@ -47,8 +47,8 @@ public static class TicketEndpoints
     {
         try
         {
-            var ticket = await ticketDAL.UpdateAsync(id, request.CustomerId, request.OperatorId, request.Title, request.Content, request.StatusId, request.PriorityId, request.ClosedAt, cancellationToken);
-            return ticket is null ? Results.NotFound() : Results.Ok(ticket);
+            var wasUpdated = await ticketDAL.UpdateAsync(id, request.CustomerId, request.OperatorId, request.Title, request.Content, request.StatusId, request.PriorityId, request.ClosedAt, cancellationToken);
+            return wasUpdated ? Results.Ok(true) : Results.NotFound();
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.ForeignKeyViolation)
         {

@@ -1,9 +1,251 @@
 @page "/tickets"
+@using System.Globalization
+@using System.Text.Json
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+@inject ISnackbar Snackbar
 
-<PageTitle>Inbox | Ticket System</PageTitle>
+<PageTitle>Tickets | Ticket System</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
-    <MudStack Spacing="4">
+    <MudStack Spacing="3">
+        <MudText Typo="Typo.h4">Tickets</MudText>
 
+        @if (_isLoading)
+        {
+            <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-8">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                <MudText Typo="Typo.body2">Loading tickets...</MudText>
+            </MudStack>
+        }
+        else if (!string.IsNullOrWhiteSpace(_loadErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.subtitle1">Tickets could not be loaded</MudText>
+                    <MudText Typo="Typo.body2">@_loadErrorMessage</MudText>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="LoadTicketsAsync">Try again</MudButton>
+                </MudStack>
+            </MudAlert>
+        }
+        else
+        {
+            <MudDropContainer T="TicketPOCO" @ref="_dropContainer" Items="@_tickets"
+                              ItemsSelector="@((ticket, dropzone) => ticket.StatusId.ToString(CultureInfo.InvariantCulture) == dropzone)"
+                              ItemDropped="HandleTicketDroppedAsync"
+                              ItemDisabled="@(ticket => _updatingTicketIds.Contains(ticket.Id))"
+                              ApplyDropClassesOnDragStarted="false"
+                              Class="mud-width-full">
+                <ChildContent>
+                    <MudGrid Spacing="2">
+                        @foreach (var status in StatusColumns)
+                        {
+                            <MudItem xs="3" Class="d-flex">
+                                <MudDropZone T="TicketPOCO"
+                                             Identifier="@status.Id.ToString(CultureInfo.InvariantCulture)"
+                                             CanDrop="@(_ => true)"
+                                             CanDropClass="@status.DropBorderClass"
+                                             Class="mud-paper mud-paper-rounded mud-paper-outlined pa-3 flex-grow-1 border-2 border-solid mud-border-lines-default"
+                                             Style="min-height: calc(100vh - 145px);">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                                        <MudChip T="string" Color="@status.Color" Variant="Variant.Filled" Size="Size.Small">@status.Name</MudChip>
+                                        <MudText Typo="Typo.caption">@GetTicketCountText(status.Id)</MudText>
+                                    </MudStack>
+                                    <MudDivider Class="mb-1" />
+
+                                    @if (!_tickets.Any(ticket => ticket.StatusId == status.Id))
+                                    {
+                                        <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Class="pa-4">No tickets</MudText>
+                                    }
+                                </MudDropZone>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </ChildContent>
+                <ItemRenderer Context="ticket">
+                    <MudCard Outlined="true" Class="mt-3" Style="cursor: pointer;" @onclick="@(() => OpenTicketDialogAsync(ticket))">
+                        <MudCardContent>
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                    <MudText Typo="Typo.overline">#@ticket.TicketNumber</MudText>
+                                    @if (_updatingTicketIds.Contains(ticket.Id))
+                                    {
+                                        <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" />
+                                    }
+                                </MudStack>
+                                <MudText Typo="Typo.subtitle2">@ticket.Title</MudText>
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                    <MudChip T="string" Color="@TicketPriorityColorMapper.GetColor(ticket.PriorityImpact)" Variant="Variant.Outlined" Size="Size.Small">@ticket.PriorityDisplayName</MudChip>
+                                    <MudText Typo="Typo.caption">@ticket.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudCardContent>
+                    </MudCard>
+                </ItemRenderer>
+            </MudDropContainer>
+        }
     </MudStack>
 </MudContainer>
+
+@code {
+    private const short ClosedStatusId = 4;
+
+    private static readonly IReadOnlyList<TicketStatusColumn> StatusColumns =
+    [
+        new(1, "Open", Color.Info, "mud-border-info"),
+        new(2, "In progress", Color.Warning, "mud-border-warning"),
+        new(3, "Resolved", Color.Success, "mud-border-success"),
+        new(4, "Closed", Color.Error, "mud-border-error")
+    ];
+
+    private readonly HashSet<Guid> _updatingTicketIds = [];
+    private List<TicketPOCO> _tickets = [];
+    private MudDropContainer<TicketPOCO>? _dropContainer;
+    private string? _loadErrorMessage;
+    private bool _isLoading = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await LoadTicketsAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadTicketsAsync()
+    {
+        _isLoading = true;
+        _loadErrorMessage = null;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            using var response = await client.GetAsync("api/tickets");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _loadErrorMessage = "The API returned an error while loading tickets.";
+                return;
+            }
+
+            _tickets = await response.Content.ReadFromJsonAsync<List<TicketPOCO>>() ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            _loadErrorMessage = "The API is currently unavailable. Please try again later.";
+        }
+        catch (JsonException)
+        {
+            _loadErrorMessage = "The API returned an invalid tickets response.";
+        }
+        catch (TaskCanceledException)
+        {
+            _loadErrorMessage = "The tickets request timed out. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleTicketDroppedAsync(MudItemDropInfo<TicketPOCO> dropInfo)
+    {
+        var ticket = dropInfo.Item;
+        var newStatusId = short.Parse(dropInfo.DropzoneIdentifier, CultureInfo.InvariantCulture);
+
+        if (ticket.StatusId == newStatusId)
+        {
+            return;
+        }
+
+        var previousStatusId = ticket.StatusId;
+        var previousClosedAt = ticket.ClosedAt;
+
+        ticket.StatusId = newStatusId;
+        ticket.ClosedAt = (newStatusId == ClosedStatusId) ? DateTimeOffset.Now : null;
+        _updatingTicketIds.Add(ticket.Id);
+        RefreshBoard();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            using var response = await client.PutAsJsonAsync($"api/tickets/{ticket.Id}", ticket);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                RevertTicket(ticket, previousStatusId, previousClosedAt);
+                Snackbar.Add("Ticket status could not be updated.", Severity.Error);
+                return;
+            }
+
+            var wasUpdated = await response.Content.ReadFromJsonAsync<bool>();
+            if (!wasUpdated)
+            {
+                RevertTicket(ticket, previousStatusId, previousClosedAt);
+                Snackbar.Add("Ticket status could not be updated.", Severity.Error);
+                return;
+            }
+        }
+        catch (HttpRequestException)
+        {
+            RevertTicket(ticket, previousStatusId, previousClosedAt);
+            Snackbar.Add("The API is currently unavailable.", Severity.Error);
+        }
+        catch (JsonException)
+        {
+            RevertTicket(ticket, previousStatusId, previousClosedAt);
+            Snackbar.Add("The API returned an invalid ticket response.", Severity.Error);
+        }
+        catch (TaskCanceledException)
+        {
+            RevertTicket(ticket, previousStatusId, previousClosedAt);
+            Snackbar.Add("The ticket update timed out.", Severity.Error);
+        }
+        finally
+        {
+            _updatingTicketIds.Remove(ticket.Id);
+            RefreshBoard();
+        }
+    }
+
+    private async Task OpenTicketDialogAsync(TicketDTO ticket)
+    {
+        var parameters = new DialogParameters
+        {
+            [nameof(TicketDialog.Ticket)] = ticket
+        };
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            FullWidth = true,
+            MaxWidth = MaxWidth.Medium,
+            BackdropClick = false
+        };
+
+        await DialogService.ShowAsync<TicketDialog>($"Ticket #{ticket.TicketNumber}", parameters, options);
+    }
+
+    private void RevertTicket(TicketPOCO ticket, short previousStatusId, DateTimeOffset? previousClosedAt)
+    {
+        ticket.StatusId = previousStatusId;
+        ticket.ClosedAt = previousClosedAt;
+    }
+
+    private void RefreshBoard()
+    {
+        _tickets = [.. _tickets];
+        _dropContainer?.Refresh();
+        StateHasChanged();
+    }
+
+    private string GetTicketCountText(short statusId)
+    {
+        var ticketCount = _tickets.Count(ticket => ticket.StatusId == statusId);
+        return ticketCount == 1 ? "1 ticket" : $"{ticketCount} tickets";
+    }
+
+    private sealed record TicketStatusColumn(short Id, string Name, Color Color, string DropBorderClass);
+}

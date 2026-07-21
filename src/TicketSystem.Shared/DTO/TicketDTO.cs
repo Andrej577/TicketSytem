@@ -1,6 +1,6 @@
 namespace TicketSystem.Shared.DTO;
 
-public sealed class TicketDTO
+public class TicketDTO
 {
     public Guid Id { get; set; }
 

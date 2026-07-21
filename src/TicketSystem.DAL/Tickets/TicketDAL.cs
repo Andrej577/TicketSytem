@@ -1,12 +1,13 @@
 using Dapper;
 using Npgsql;
 using TicketSystem.Shared;
-using TicketSystem.Shared.DTO;
+using TicketSystem.Shared.POCO;
 
 namespace TicketSystem.DAL.Tickets;
 
 public sealed class TicketDAL
 {
+    private const string TicketPriorityTable = "TicketPriority";
     private const string TicketTable = "Ticket";
 
     private readonly NpgsqlDataSource dataSource;
@@ -16,93 +17,82 @@ public sealed class TicketDAL
         this.dataSource = dataSource;
     }
 
-    public async Task<IReadOnlyList<TicketDTO>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<TicketPOCO>> GetAllAsync(CancellationToken cancellationToken)
     {
         var sql = $"""
             SELECT
-                "Id",
-                "TicketNumber",
-                "ChatSessionId",
-                "CustomerId",
-                "OperatorId",
-                "Title",
-                "Content",
-                "StatusId",
-                "PriorityId",
-                "CreatedAt",
-                "UpdatedAt",
-                "ClosedAt",
-                "IsDeleted",
-                "UpdatedByUserId"
-            FROM "{TicketTable}"
-            WHERE "IsDeleted" = false
-            ORDER BY "CreatedAt" DESC;
+                "Ticket".*,
+                "TicketPriority"."DisplayName" AS "PriorityDisplayName",
+                "TicketPriority"."Impact" AS "PriorityImpact"
+            FROM "{TicketTable}" AS "Ticket"
+            INNER JOIN "{TicketPriorityTable}" AS "TicketPriority" ON "TicketPriority"."Id" = "Ticket"."PriorityId"
+            WHERE "Ticket"."IsDeleted" = false
+            ORDER BY "Ticket"."CreatedAt" DESC;
             """;
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var command = new CommandDefinition(sql, cancellationToken: cancellationToken);
-        return (await connection.QueryAsync<TicketDTO>(command)).ToList();
+        return (await connection.QueryAsync<TicketPOCO>(command)).ToList();
     }
 
-    public async Task<TicketDTO?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<TicketPOCO?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var sql = $"""
             SELECT
-                "Id",
-                "TicketNumber",
-                "ChatSessionId",
-                "CustomerId",
-                "OperatorId",
-                "Title",
-                "Content",
-                "StatusId",
-                "PriorityId",
-                "CreatedAt",
-                "UpdatedAt",
-                "ClosedAt",
-                "IsDeleted",
-                "UpdatedByUserId"
-            FROM "{TicketTable}"
-            WHERE "Id" = @Id AND "IsDeleted" = false;
+                "Ticket".*,
+                "TicketPriority"."DisplayName" AS "PriorityDisplayName",
+                "TicketPriority"."Impact" AS "PriorityImpact"
+            FROM "{TicketTable}" AS "Ticket"
+            INNER JOIN "{TicketPriorityTable}" AS "TicketPriority" ON "TicketPriority"."Id" = "Ticket"."PriorityId"
+            WHERE "Ticket"."Id" = @Id AND "Ticket"."IsDeleted" = false;
             """;
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var command = new CommandDefinition(sql, new { Id = id }, cancellationToken: cancellationToken);
-        return await connection.QuerySingleOrDefaultAsync<TicketDTO>(command);
+        return await connection.QuerySingleOrDefaultAsync<TicketPOCO>(command);
     }
 
-    public async Task<TicketDTO> CreateAsync(Guid customerId, Guid? operatorId, string title, string content, short statusId, short priorityId, DateTimeOffset? closedAt, CancellationToken cancellationToken)
+    public async Task<TicketPOCO> CreateAsync(Guid customerId, Guid? operatorId, string title, string content, short statusId, short priorityId, DateTimeOffset? closedAt, CancellationToken cancellationToken)
     {
         var sql = $"""
-            INSERT INTO "{TicketTable}" (
-                "CustomerId",
-                "OperatorId",
-                "Title",
-                "Content",
-                "StatusId",
-                "PriorityId",
-                "ClosedAt",
-                "UpdatedByUserId"
+            WITH "CreatedTicket" AS (
+                INSERT INTO "{TicketTable}" (
+                    "CustomerId",
+                    "OperatorId",
+                    "Title",
+                    "Content",
+                    "StatusId",
+                    "PriorityId",
+                    "ClosedAt",
+                    "UpdatedByUserId"
+                )
+                VALUES (
+                    @CustomerId,
+                    @OperatorId,
+                    @Title,
+                    @Content,
+                    @StatusId,
+                    @PriorityId,
+                    @ClosedAt,
+                    @UpdatedByUserId
+                )
+                RETURNING *
             )
-            VALUES (
-                @CustomerId,
-                @OperatorId,
-                @Title,
-                @Content,
-                @StatusId,
-                @PriorityId,
-                @ClosedAt,
-                @UpdatedByUserId
-            )
+            SELECT
+                "CreatedTicket".*,
+                "TicketPriority"."DisplayName" AS "PriorityDisplayName",
+                "TicketPriority"."Impact" AS "PriorityImpact"
+            FROM "CreatedTicket"
+            INNER JOIN "{TicketPriorityTable}" AS "TicketPriority" ON "TicketPriority"."Id" = "CreatedTicket"."PriorityId";
             """;
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var parameters = new { CustomerId = customerId, OperatorId = operatorId, Title = title, Content = content, StatusId = statusId, PriorityId = priorityId, ClosedAt = closedAt, UpdatedByUserId = SystemUserIds.AdministratorId };
         var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        return await connection.QuerySingleAsync<TicketDTO>(command);
+        return await connection.QuerySingleAsync<TicketPOCO>(command);
     }
 
-    public async Task<TicketDTO?> UpdateAsync(Guid id, Guid customerId, Guid? operatorId, string title, string content, short statusId, short priorityId, DateTimeOffset? closedAt, CancellationToken cancellationToken)
+    public async Task<bool> UpdateAsync(Guid id, Guid customerId, Guid? operatorId, string title, string content, short statusId, short priorityId, DateTimeOffset? closedAt, CancellationToken cancellationToken)
     {
         var sql = $"""
             UPDATE "{TicketTable}"
@@ -116,13 +106,13 @@ public sealed class TicketDAL
                 "ClosedAt" = @ClosedAt,
                 "UpdatedAt" = now(),
                 "UpdatedByUserId" = @UpdatedByUserId
-            WHERE "Id" = @Id AND "IsDeleted" = false
+            WHERE "Id" = @Id AND "IsDeleted" = false;
             """;
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var parameters = new { Id = id, CustomerId = customerId, OperatorId = operatorId, Title = title, Content = content, StatusId = statusId, PriorityId = priorityId, ClosedAt = closedAt, UpdatedByUserId = SystemUserIds.AdministratorId };
         var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        return await connection.QuerySingleOrDefaultAsync<TicketDTO>(command);
+        return await connection.ExecuteAsync(command) > 0;
     }
 
     public async Task<int> DeleteAsync(Guid id, CancellationToken cancellationToken)

@@ -2,12 +2,13 @@ namespace TicketSystem.DAL.Database;
 
 public static class DatabaseMigrations
 {
-    public static int DatabaseVersion { get; } = 2;
+    public static int DatabaseVersion { get; } = 3;
 
     public static IReadOnlyList<DatabaseMigration> All { get; } =
     [
         new(1, UpgradeTo1()),
-        new(2, UpgradeTo2())
+        new(2, UpgradeTo2()),
+        new(3, UpgradeTo3())
     ];
 
     private static string UpgradeTo1()
@@ -291,6 +292,26 @@ public static class DatabaseMigrations
             FOREIGN KEY ("UpdatedByUserId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
 
             CREATE INDEX "IXTicketUpdatedByUserId" ON "Ticket" ("UpdatedByUserId");
+            """;
+    }
+
+    private static string UpgradeTo3()
+    {
+        return """
+            ALTER TABLE "TicketPriority"
+            RENAME COLUMN "Name" TO "DisplayName";
+
+            ALTER TABLE "TicketPriority"
+            RENAME COLUMN "Code" TO "Name";
+
+            ALTER TABLE "TicketPriority"
+            RENAME COLUMN "SortOrder" TO "Impact";
+
+            ALTER TABLE "TicketPriority"
+            RENAME CONSTRAINT "UQ_TicketPriorityCode" TO "UQ_TicketPriorityName";
+
+            ALTER TABLE "TicketPriority"
+            RENAME CONSTRAINT "UQ_TicketPrioritySortOrder" TO "UQ_TicketPriorityImpact";
             """;
     }
 }

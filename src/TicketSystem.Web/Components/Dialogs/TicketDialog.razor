@@ -1,7 +1,21 @@
 ﻿<MudDialog>
+    <DialogContent>
+    </DialogContent>
 
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Close">Close</MudButton>
+    </DialogActions>
 </MudDialog>
 
 @code {
+    [CascadingParameter]
+    private IMudDialogInstance DialogInstance { get; set; } = null!;
 
+    [Parameter]
+    public TicketDTO Ticket { get; set; } = null!;
+
+    private void Close()
+    {
+        DialogInstance.Close();
+    }
 }
