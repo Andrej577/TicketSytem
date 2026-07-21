@@ -1,21 +1,197 @@
-﻿<MudDialog>
+﻿@using System.Globalization
+@using System.Text.Json
+@inject IDialogService DialogService
+@inject IHttpClientFactory HttpClientFactory
+@inject ISnackbar Snackbar
+
+<MudDialog>
     <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField T="string" Label="Title" @bind-Value="_editedTicket.Title" Variant="Variant.Outlined" />
+
+            <MudGrid Spacing="2">
+                <MudItem xs="6">
+                    <MudTextField T="string" Label="Sender email" Value="@_editedTicket.CustomerEmail" ReadOnly="true" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField T="string" Label="Assigned to" Value="@(_editedTicket.OperatorEmail ?? "Unassigned")" ReadOnly="true" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudSelect T="short" Label="Priority" @bind-Value="_editedTicket.PriorityId" Disabled="@(_isLoadingPriorities || _priorities.Count == 0)" Variant="Variant.Outlined">
+                        @foreach (var priority in _priorities)
+                        {
+                            <MudSelectItem T="short" Value="@priority.Id">@priority.DisplayName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudSelect T="short" Label="Status" @bind-Value="_editedTicket.StatusId" Variant="Variant.Outlined">
+                        @foreach (var status in TicketStatusOptions.All)
+                        {
+                            <MudSelectItem T="short" Value="@status.Id">@status.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            @if (_isLoadingPriorities)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            }
+
+            <MudTextField T="string" Label="Content" @bind-Value="_editedTicket.Content" Lines="6" Variant="Variant.Outlined" />
+
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.caption">Created @_editedTicket.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                <MudText Typo="Typo.caption">Updated @_editedTicket.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+            </MudStack>
+        </MudStack>
     </DialogContent>
 
     <DialogActions>
-        <MudButton Variant="Variant.Text" OnClick="Close">Close</MudButton>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="px-4 mud-width-full">
+            <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)">Delete</MudButton>
+            <MudSpacer />
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Chat" Disabled="true">Open chat</MudButton>
+            <MudButton Variant="Variant.Text" OnClick="Cancel" Disabled="@(_isSaving || _isDeleting)">Cancel</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Outlined.Save" OnClick="SaveAsync" Disabled="@(_isLoadingPriorities || _priorities.Count == 0 || _isSaving || _isDeleting)">Save</MudButton>
+        </MudStack>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter]
-    private IMudDialogInstance DialogInstance { get; set; } = null!;
+    private IMudDialogInstance _dialogInstance { get; set; } = null!;
 
     [Parameter]
-    public TicketDTO Ticket { get; set; } = null!;
+    public TicketPOCO _ticket { get; set; } = null!;
 
-    private void Close()
+    private TicketPOCO _editedTicket = new();
+    private List<TicketPriorityDTO> _priorities = [];
+    private bool _isDeleting;
+    private bool _isLoadingPriorities = true;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
     {
-        DialogInstance.Close();
+        _editedTicket = _ticket.Copy();
+        await LoadPrioritiesAsync();
+    }
+
+    private async Task LoadPrioritiesAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            using var response = await client.GetAsync("api/ticket-priorities");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Ticket priorities could not be loaded.", Severity.Error);
+                return;
+            }
+
+            _priorities = await response.Content.ReadFromJsonAsync<List<TicketPriorityDTO>>() ?? [];
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("The API is currently unavailable.", Severity.Error);
+        }
+        catch (JsonException)
+        {
+            Snackbar.Add("The API returned an invalid priority response.", Severity.Error);
+        }
+        catch (TaskCanceledException)
+        {
+            Snackbar.Add("The priority request timed out.", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingPriorities = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _isSaving = true;
+
+        try
+        {
+            _editedTicket.ClosedAt = _editedTicket.StatusId == TicketStatusOptions.ClosedId ? _editedTicket.ClosedAt ?? DateTimeOffset.Now : null;
+
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            using var response = await client.PutAsJsonAsync($"api/tickets/{_editedTicket.Id}", _editedTicket);
+
+            if (!response.IsSuccessStatusCode || !await response.Content.ReadFromJsonAsync<bool>())
+            {
+                Snackbar.Add("Ticket could not be updated.", Severity.Error);
+                return;
+            }
+
+            var priority = _priorities.Single(priority => priority.Id == _editedTicket.PriorityId);
+            _editedTicket.PriorityDisplayName = priority.DisplayName;
+            _editedTicket.PriorityImpact = priority.Impact;
+            _editedTicket.UpdatedAt = DateTimeOffset.Now;
+
+            _dialogInstance.Close(DialogResult.Ok(_editedTicket));
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("The API is currently unavailable.", Severity.Error);
+        }
+        catch (JsonException)
+        {
+            Snackbar.Add("The API returned an invalid ticket response.", Severity.Error);
+        }
+        catch (TaskCanceledException)
+        {
+            Snackbar.Add("The ticket update timed out.", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync("Delete ticket", $"Delete ticket #{_editedTicket.TicketNumber}?", yesText: "Delete", cancelText: "Cancel");
+        if (confirmed != true)
+        {
+            return;
+        }
+
+        _isDeleting = true;
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("TicketSystemApi");
+            using var response = await client.DeleteAsync($"api/tickets/{_editedTicket.Id}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Ticket could not be deleted.", Severity.Error);
+                return;
+            }
+
+            _dialogInstance.Close(DialogResult.Ok(_editedTicket.Id));
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("The API is currently unavailable.", Severity.Error);
+        }
+        catch (TaskCanceledException)
+        {
+            Snackbar.Add("The ticket delete request timed out.", Severity.Error);
+        }
+        finally
+        {
+            _isDeleting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        _dialogInstance.Cancel();
     }
 }

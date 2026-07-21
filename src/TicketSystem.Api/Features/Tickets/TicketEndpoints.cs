@@ -1,5 +1,6 @@
 using Npgsql;
 using TicketSystem.DAL.Tickets;
+using TicketSystem.Shared.DTO;
 using TicketSystem.Shared.POCO;
 
 namespace TicketSystem.Api.Features.Tickets;
@@ -16,7 +17,14 @@ public static class TicketEndpoints
         group.MapPut("/{id:guid}", UpdateTicket).WithName("UpdateTicket").Produces<bool>(StatusCodes.Status200OK).Produces(StatusCodes.Status404NotFound).Produces(StatusCodes.Status409Conflict);
         group.MapDelete("/{id:guid}", DeleteTicket).WithName("DeleteTicket").Produces(StatusCodes.Status204NoContent).Produces(StatusCodes.Status404NotFound);
 
+        endpoints.MapGet("/api/ticket-priorities", GetTicketPriorities).WithTags("Ticket priorities").WithName("GetTicketPriorities").Produces<IReadOnlyList<TicketPriorityDTO>>(StatusCodes.Status200OK);
+
         return endpoints;
+    }
+
+    private static async Task<IResult> GetTicketPriorities(TicketDAL ticketDAL, CancellationToken cancellationToken)
+    {
+        return Results.Ok(await ticketDAL.GetPrioritiesAsync(cancellationToken));
     }
 
     private static async Task<IResult> GetTickets(TicketDAL ticketDAL, CancellationToken cancellationToken)

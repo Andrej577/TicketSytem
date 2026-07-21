@@ -38,7 +38,7 @@
                               Class="mud-width-full">
                 <ChildContent>
                     <MudGrid Spacing="2">
-                        @foreach (var status in StatusColumns)
+                        @foreach (var status in TicketStatusOptions.All)
                         {
                             <MudItem xs="3" Class="d-flex">
                                 <MudDropZone T="TicketPOCO"
@@ -87,15 +87,13 @@
     </MudStack>
 </MudContainer>
 
-@code {
-    private static readonly IReadOnlyList<TicketStatusColumn> StatusColumns =
-    [
-        new(1, "Open", Color.Info, "mud-border-info"),
-        new(2, "In progress", Color.Warning, "mud-border-warning"),
-        new(3, "Resolved", Color.Success, "mud-border-success"),
-        new(4, "Closed", Color.Error, "mud-border-error")
-    ];
+<style>
+    .blur-class {
+        backdrop-filter: blur(10px);
+    }
+</style>
 
+@code {
     private readonly HashSet<Guid> _updatingTicketIds = [];
     private List<TicketPOCO> _tickets = [];
     private MudDropContainer<TicketPOCO>? _dropContainer;
@@ -163,7 +161,7 @@
         var previousClosedAt = ticket.ClosedAt;
 
         ticket.StatusId = newStatusId;
-        ticket.ClosedAt = (newStatusId == 4) ? DateTimeOffset.Now : null;
+        ticket.ClosedAt = newStatusId == TicketStatusOptions.ClosedId ? DateTimeOffset.Now : null;
         _updatingTicketIds.Add(ticket.Id);
         RefreshBoard();
 
@@ -209,21 +207,40 @@
         }
     }
 
-    private async Task OpenTicketDialogAsync(TicketDTO ticket)
+    private async Task OpenTicketDialogAsync(TicketPOCO ticket)
     {
         var parameters = new DialogParameters
         {
-            [nameof(TicketDialog.Ticket)] = ticket
+            [nameof(TicketDialog._ticket)] = ticket
         };
         var options = new DialogOptions
         {
             CloseButton = true,
             FullWidth = true,
             MaxWidth = MaxWidth.Medium,
-            BackdropClick = false
+            BackdropClick = false,
+            BackgroundClass = "blur-class"
         };
 
-        await DialogService.ShowAsync<TicketDialog>($"Ticket #{ticket.TicketNumber}", parameters, options);
+        var dialog = await DialogService.ShowAsync<TicketDialog>($"Ticket #{ticket.TicketNumber}", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled)
+        {
+            return;
+        }
+
+        if (result.Data is TicketPOCO updatedTicket)
+        {
+            var ticketIndex = _tickets.FindIndex(ticket => ticket.Id == updatedTicket.Id);
+            _tickets[ticketIndex] = updatedTicket;
+        }
+        else if (result.Data is Guid deletedTicketId)
+        {
+            _tickets.RemoveAll(ticket => ticket.Id == deletedTicketId);
+        }
+
+        RefreshBoard();
     }
 
     private void RevertTicket(TicketPOCO ticket, short previousStatusId, DateTimeOffset? previousClosedAt)
@@ -244,6 +261,4 @@
         var ticketCount = _tickets.Count(ticket => ticket.StatusId == statusId);
         return ticketCount == 1 ? "1 ticket" : $"{ticketCount} tickets";
     }
-
-    private sealed record TicketStatusColumn(short Id, string Name, Color Color, string DropBorderClass);
 }
