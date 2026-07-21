@@ -88,8 +88,6 @@
 </MudContainer>
 
 @code {
-    private const short ClosedStatusId = 4;
-
     private static readonly IReadOnlyList<TicketStatusColumn> StatusColumns =
     [
         new(1, "Open", Color.Info, "mud-border-info"),
@@ -165,7 +163,7 @@
         var previousClosedAt = ticket.ClosedAt;
 
         ticket.StatusId = newStatusId;
-        ticket.ClosedAt = (newStatusId == ClosedStatusId) ? DateTimeOffset.Now : null;
+        ticket.ClosedAt = (newStatusId == 4) ? DateTimeOffset.Now : null;
         _updatingTicketIds.Add(ticket.Id);
         RefreshBoard();
 
