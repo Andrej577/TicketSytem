@@ -258,3 +258,10 @@ VALUES (
     now(),
     '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'
 );
+
+INSERT INTO "AppUser" ("Email", "PasswordHash", "UserTypeId", "UpdatedByUserId")
+VALUES
+    ('customer1@ticketsystem.local', 'pbkdf2-sha256$100000$YUFcv4vEuLC/oP0DXytOfw==$qdLZall/krl8eqt8YauYy95IKdDayMHQcXCxjGhg3/0=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
+    ('customer2@ticketsystem.local', 'pbkdf2-sha256$100000$YpD12bK6eZYl72w0OcEeXA==$ejIdWPs6McK0WIkuG5PzK9cw+LXvqCJ76F33XKWfiQ4=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
+    ('support1@ticketsystem.local', 'pbkdf2-sha256$100000$bVeYhVewq6bgqstV7VxaYg==$sCeDxZbSVh9lZcMLZZfExy+4VLvAeZi8EekO/mcuWrM=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
+    ('support2@ticketsystem.local', 'pbkdf2-sha256$100000$hGz/qId57Ox8lR2MHCv5Ag==$ca952K+yHQFEDAwalyXwtTmOuuAviwh5y94EPCJLWt4=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d');
