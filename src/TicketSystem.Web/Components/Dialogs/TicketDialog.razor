@@ -16,21 +16,27 @@
                 <MudItem xs="6">
                     <MudTextField T="string" Label="Assigned to" Value="@(_editedTicket.OperatorEmail ?? "Unassigned")" ReadOnly="true" Variant="Variant.Outlined" />
                 </MudItem>
-                <MudItem xs="6">
-                    <MudSelect T="short" Label="Priority" @bind-Value="_editedTicket.PriorityId" Disabled="@(_isLoadingPriorities || _priorities.Count == 0)" Variant="Variant.Outlined">
-                        @foreach (var priority in _priorities)
-                        {
-                            <MudSelectItem T="short" Value="@priority.Id">@priority.DisplayName</MudSelectItem>
-                        }
-                    </MudSelect>
+                <MudItem xs="12">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.body2">Priority</MudText>
+                        <MudToggleGroup T="short" @bind-Value="_editedTicket.PriorityId" Vertical="false" Color="@GetPriorityColor()" Disabled="@(_isLoadingPriorities || _priorities.Count == 0)" Class="mud-width-full">
+                            @foreach (var priority in _priorities)
+                            {
+                                <MudToggleItem T="short" Value="@priority.Id" Text="@priority.DisplayName" />
+                            }
+                        </MudToggleGroup>
+                    </MudStack>
                 </MudItem>
-                <MudItem xs="6">
-                    <MudSelect T="short" Label="Status" @bind-Value="_editedTicket.StatusId" Variant="Variant.Outlined">
-                        @foreach (var status in TicketStatusOptions.All)
-                        {
-                            <MudSelectItem T="short" Value="@status.Id">@status.Name</MudSelectItem>
-                        }
-                    </MudSelect>
+                <MudItem xs="12">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.body2">Status</MudText>
+                        <MudToggleGroup T="short" @bind-Value="_editedTicket.StatusId" Vertical="false" Color="@GetStatusColor()" Class="mud-width-full">
+                            @foreach (var status in TicketStatusOptions.All)
+                            {
+                                <MudToggleItem T="short" Value="@status.Id" Text="@status.Name" />
+                            }
+                        </MudToggleGroup>
+                    </MudStack>
                 </MudItem>
             </MudGrid>
 
@@ -188,6 +194,17 @@
         {
             _isDeleting = false;
         }
+    }
+
+    private Color GetPriorityColor()
+    {
+        var priority = _priorities.FirstOrDefault(priority => priority.Id == _editedTicket.PriorityId);
+        return TicketPriorityColorMapper.GetColor(priority?.Impact ?? _editedTicket.PriorityImpact);
+    }
+
+    private Color GetStatusColor()
+    {
+        return TicketStatusOptions.All.Single(status => status.Id == _editedTicket.StatusId).Color;
     }
 
     private void Cancel()

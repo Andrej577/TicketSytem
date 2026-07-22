@@ -13,6 +13,7 @@ This repository contains a ticket system with PostgreSQL persistence, a Blazor W
 - `src/TicketSystem.Web` - Blazor Web App project configured for MudBlazor and server interactivity.
 - `src/TicketSystem.Realtime` - standalone ASP.NET Core SignalR host used for chat communication.
 - `TicketSystem.slnLaunch` - Visual Studio multi-project launch profile for starting Web and Realtime together.
+- `deploy/README.md` - Docker configuration, standard startup, Web hot reload, and container operations.
 
 ## Application Stack
 
@@ -39,6 +40,10 @@ The Realtime SignalR hub URL is:
 ```text
 https://localhost:7197/hubs/chat
 ```
+
+## Docker
+
+See [`deploy/README.md`](deploy/README.md) for every Docker environment setting and command, including complete stack startup, individual service rebuilds, database reset, and automatic Web reload with `dotnet watch`.
 
 ## Data Model
 
@@ -225,4 +230,4 @@ This is the preferred mock because it balances ticket context, chat history, and
 
 ## Database migrations
 
-The API applies pending migrations from `DatabaseMigrations.All` during startup and records every applied version in the `DatabaseVersion` table. The root `schema.sql` file mirrors the complete current schema and can also be used to create an empty database manually. Both definitions must remain synchronized. See `deploy/README.md` for the container startup workflow.
+The API applies pending migrations from `DatabaseMigrations.All` during startup and records every applied version in the `DatabaseVersion` table. The root `schema.sql` file mirrors the complete current schema and can also be used to create an empty database manually. Both definitions must remain synchronized. See [`deploy/README.md`](deploy/README.md) for the container startup workflow.
