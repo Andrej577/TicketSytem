@@ -7,8 +7,8 @@
 
 <PageTitle>Tickets | Ticket System</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
-    <MudStack Spacing="3">
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4 tickets-page">
+    <MudStack Spacing="3" Class="tickets-page-content">
         <MudText Typo="Typo.h4">Tickets</MudText>
 
         @if (_isLoading)
@@ -30,64 +30,110 @@
         }
         else
         {
-            <MudDropContainer T="TicketPOCO" @ref="_dropContainer" Items="@_tickets"
-                              ItemsSelector="@((ticket, dropzone) => ticket.StatusId.ToString(CultureInfo.InvariantCulture) == dropzone)"
-                              ItemDropped="HandleTicketDroppedAsync"
-                              ItemDisabled="@(ticket => _updatingTicketIds.Contains(ticket.Id))"
-                              ApplyDropClassesOnDragStarted="false"
-                              Class="mud-width-full">
-                <ChildContent>
-                    <MudGrid Spacing="2">
-                        @foreach (var status in TicketStatusOptions.All)
-                        {
-                            <MudItem xs="3" Class="d-flex">
-                                <MudDropZone T="TicketPOCO"
-                                             Identifier="@status.Id.ToString(CultureInfo.InvariantCulture)"
-                                             CanDrop="@(_ => true)"
-                                             CanDropClass="@status.DropBorderClass"
-                                             Class="mud-paper mud-paper-rounded mud-paper-outlined pa-3 flex-grow-1 border-2 border-solid mud-border-lines-default"
-                                             Style="min-height: calc(100vh - 145px);">
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
-                                        <MudChip T="string" Color="@status.Color" Variant="Variant.Filled" Size="Size.Small">@status.Name</MudChip>
-                                        <MudText Typo="Typo.caption">@GetTicketCountText(status.Id)</MudText>
-                                    </MudStack>
-                                    <MudDivider Class="mb-1" />
+            <div class="kanban-board">
+                <MudDropContainer T="TicketPOCO" @ref="_dropContainer" Items="@_tickets"
+                                  ItemsSelector="@((ticket, dropzone) => ticket.StatusId.ToString(CultureInfo.InvariantCulture) == dropzone)"
+                                  ItemDropped="HandleTicketDroppedAsync"
+                                  ItemDisabled="@(ticket => _updatingTicketIds.Contains(ticket.Id))"
+                                  ApplyDropClassesOnDragStarted="false"
+                                  Class="mud-width-full kanban-drop-container">
+                    <ChildContent>
+                        <MudGrid Spacing="2" Class="kanban-grid">
+                            @foreach (var status in TicketStatusOptions.All)
+                            {
+                                <MudItem xs="3" Class="d-flex kanban-column">
+                                    <MudDropZone T="TicketPOCO"
+                                                 Identifier="@status.Id.ToString(CultureInfo.InvariantCulture)"
+                                                 CanDrop="@(_ => true)"
+                                                 CanDropClass="@status.DropBorderClass"
+                                                 Class="mud-paper mud-paper-rounded mud-paper-outlined pa-3 flex-grow-1 border-2 border-solid mud-border-lines-default kanban-drop-zone">
+                                        <div class="kanban-column-header">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                                                <MudChip T="string" Color="@status.Color" Variant="Variant.Filled" Size="Size.Small">@status.Name</MudChip>
+                                                <MudText Typo="Typo.caption">@GetTicketCountText(status.Id)</MudText>
+                                            </MudStack>
+                                            <MudDivider Class="mb-1" />
+                                        </div>
 
-                                    @if (!_tickets.Any(ticket => ticket.StatusId == status.Id))
-                                    {
-                                        <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Class="pa-4">No tickets</MudText>
-                                    }
-                                </MudDropZone>
-                            </MudItem>
-                        }
-                    </MudGrid>
-                </ChildContent>
-                <ItemRenderer Context="ticket">
-                    <MudCard Outlined="true" Class="mt-3" Style="cursor: pointer;" @onclick="@(() => OpenTicketDialogAsync(ticket))">
-                        <MudCardContent>
-                            <MudStack Spacing="2">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                    <MudText Typo="Typo.overline">#@ticket.TicketNumber</MudText>
-                                    @if (_updatingTicketIds.Contains(ticket.Id))
-                                    {
-                                        <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" />
-                                    }
+                                        @if (!_tickets.Any(ticket => ticket.StatusId == status.Id))
+                                        {
+                                            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Class="pa-4">No tickets</MudText>
+                                        }
+                                    </MudDropZone>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    </ChildContent>
+                    <ItemRenderer Context="ticket">
+                        <MudCard Outlined="true" Class="mt-3" Style="cursor: pointer;" @onclick="@(() => OpenTicketDialogAsync(ticket))">
+                            <MudCardContent>
+                                <MudStack Spacing="2">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                        <MudChip T="string" Color="@TicketPriorityColorMapper.GetColor(ticket.PriorityImpact)" Variant="Variant.Outlined" Size="Size.Small" Class="ml-0">@ticket.PriorityDisplayName</MudChip>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            @if (_updatingTicketIds.Contains(ticket.Id))
+                                            {
+                                                <MudProgressCircular Size="Size.Small" Color="Color.Primary" Indeterminate="true" />
+                                            }
+                                            <MudText Typo="Typo.caption">@ticket.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                                        </MudStack>
+                                    </MudStack>
+                                    <MudText Typo="Typo.subtitle2">#@ticket.TicketNumber</MudText>
+                                    <MudText Typo="Typo.subtitle1"><strong>@ticket.Title</strong></MudText>
                                 </MudStack>
-                                <MudText Typo="Typo.subtitle2">@ticket.Title</MudText>
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                    <MudChip T="string" Color="@TicketPriorityColorMapper.GetColor(ticket.PriorityImpact)" Variant="Variant.Outlined" Size="Size.Small">@ticket.PriorityDisplayName</MudChip>
-                                    <MudText Typo="Typo.caption">@ticket.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudCardContent>
-                    </MudCard>
-                </ItemRenderer>
-            </MudDropContainer>
+                            </MudCardContent>
+                        </MudCard>
+                    </ItemRenderer>
+                </MudDropContainer>
+            </div>
         }
     </MudStack>
 </MudContainer>
 
 <style>
+    .tickets-page {
+        height: calc(100dvh - var(--mud-appbar-height));
+        overflow: hidden;
+    }
+
+    .tickets-page-content {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .kanban-board {
+        display: flex;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .kanban-drop-container,
+    .kanban-grid,
+    .kanban-column {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .kanban-grid {
+        flex: 1 1 auto;
+    }
+
+    .kanban-drop-zone {
+        height: 100%;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .kanban-column-header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: var(--mud-palette-surface);
+    }
+
     .blur-class {
         backdrop-filter: blur(10px);
     }
