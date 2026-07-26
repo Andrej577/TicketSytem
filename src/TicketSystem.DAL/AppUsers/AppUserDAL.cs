@@ -18,7 +18,7 @@ public sealed class AppUserDAL
 
     public async Task<AppUserLoginData?> GetForLoginAsync(string email, CancellationToken cancellationToken)
     {
-        var sql = $"SELECT Id, Email, PasswordHash, UserTypeId FROM {AppUserTable} WHERE Email = @Email;";
+        var sql = $"""SELECT "Id", "Email", "PasswordHash", "UserTypeId" FROM "{AppUserTable}" WHERE "Email" = @Email;""";
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var command = new CommandDefinition(sql, new { Email = email }, cancellationToken: cancellationToken);
