@@ -14,6 +14,7 @@ DapperConfiguration.Configure();
 builder.Services.AddControllers();
 builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddDatabaseUpdater();
+builder.Services.AddSignalR();
 builder.Services.AddSingleton(serviceProvider =>
 {
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
@@ -25,6 +26,7 @@ builder.Services.AddSingleton(serviceProvider =>
 });
 builder.Services.AddScoped<AppUserDAL>();
 builder.Services.AddScoped<TicketDAL>();
+builder.Services.AddScoped<TicketRealtimeNotifier>();
 
 var app = builder.Build();
 
@@ -42,5 +44,6 @@ app.MapControllers();
 app.MapAuthenticationEndpoints();
 app.MapAppUserEndpoints();
 app.MapTicketEndpoints();
+app.MapHub<TicketHub>("/hubs/tickets");
 
 app.Run();

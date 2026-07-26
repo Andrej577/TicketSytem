@@ -49,7 +49,7 @@ public static class TicketEndpoints
         return ticket is null ? Results.NotFound() : Results.Ok(ticket);
     }
 
-    private static async Task<IResult> CreateTicket(CreateTicketRequest request, ClaimsPrincipal user, TicketDAL ticketDAL, CancellationToken cancellationToken)
+    private static async Task<IResult> CreateTicket(CreateTicketRequest request, ClaimsPrincipal user, TicketDAL ticketDAL, TicketRealtimeNotifier ticketRealtimeNotifier, CancellationToken cancellationToken)
     {
         try
         {
@@ -65,6 +65,7 @@ public static class TicketEndpoints
                 isCustomer ? null : request.ClosedAt,
                 currentUserId,
                 cancellationToken);
+            await ticketRealtimeNotifier.NotifyCreatedTicketAsync(ticket.Id);
             return Results.Created($"/api/tickets/{ticket.Id}", ticket);
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.ForeignKeyViolation)

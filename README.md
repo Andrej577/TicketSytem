@@ -26,7 +26,9 @@ Current setup:
 - `TicketSystem.Web` runs as the MudBlazor application.
 - `TicketSystem.Realtime` contains the `ChatHub` SignalR hub and the `ChatMessage` message model.
 - `TicketSystem.Realtime` maps the SignalR chat endpoint at `/hubs/chat`.
+- `TicketSystem.Api` maps the authenticated Ticket notification hub at `/hubs/tickets`.
 - SignalR groups are named with the `chat-session:{sessionId}` pattern, matching the database `ChatSession` concept.
+- After a Ticket is created, the API broadcasts its ID and connected Ticket pages fetch it through the authorized API before adding it to the Kanban board.
 
 ## Visual Studio Launch
 
@@ -35,10 +37,11 @@ Open `TicketSystem.sln` in Visual Studio 2022 and select the `TicketSystem Web +
 - `TicketSystem.Web` on `https://localhost:7097` and `http://localhost:5047`.
 - `TicketSystem.Realtime` on `https://localhost:7197` and `http://localhost:5057`.
 
-The Realtime SignalR hub URL is:
+The SignalR hub URLs are:
 
 ```text
 https://localhost:7197/hubs/chat
+https://localhost:7280/hubs/tickets
 ```
 
 ## Docker

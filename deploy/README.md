@@ -84,7 +84,8 @@ The services are named `database`, `api`, `realtime`, and `web`. Default endpoin
 - Web: `http://localhost:8180`
 - API: `http://localhost:8081`
 - Realtime service: `http://localhost:8082`
-- SignalR hub: `http://localhost:8082/hubs/chat`
+- Chat SignalR hub: `http://localhost:8082/hubs/chat`
+- Ticket SignalR hub: `http://localhost:8081/hubs/tickets`
 - PostgreSQL: `localhost:5432`
 
 The API waits for PostgreSQL to become healthy and then applies pending database migrations automatically. The Dockerfile-specific `.dockerignore` files prevent local Windows `bin` and `obj` output from being copied into Linux image builds.
