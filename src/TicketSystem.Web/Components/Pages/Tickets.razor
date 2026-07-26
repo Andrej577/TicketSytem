@@ -1,15 +1,32 @@
 @page "/tickets"
+@attribute [Authorize]
 @using System.Globalization
 @using System.Text.Json
 @inject IDialogService DialogService
-@inject IHttpClientFactory HttpClientFactory
+@inject TicketSystemApiClient ApiClient
 @inject ISnackbar Snackbar
 
 <PageTitle>Tickets | Ticket System</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-4 tickets-page">
     <MudStack Spacing="3" Class="tickets-page-content">
-        <MudText Typo="Typo.h4">Tickets</MudText>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.h4">Tickets</MudText>
+
+            @if (_isCustomer)
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Add" OnClick="OpenCreateTicketDialogAsync">
+                    New ticket
+                </MudButton>
+            }
+            else if (_isOperator)
+            {
+                <MudSelect T="bool" Label="Ticket view" @bind-Value="_showOnlyMyTickets" @bind-Value:after="RefreshBoard" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 180px;">
+                    <MudSelectItem T="bool" Value="@true">My tickets</MudSelectItem>
+                    <MudSelectItem T="bool" Value="@false">All tickets</MudSelectItem>
+                </MudSelect>
+            }
+        </MudStack>
 
         @if (_isLoading)
         {
@@ -31,10 +48,10 @@
         else
         {
             <div class="kanban-board">
-                <MudDropContainer T="TicketPOCO" @ref="_dropContainer" Items="@_tickets"
+                <MudDropContainer T="TicketPOCO" @ref="_dropContainer" Items="@_visibleTickets"
                                   ItemsSelector="@((ticket, dropzone) => ticket.StatusId.ToString(CultureInfo.InvariantCulture) == dropzone)"
                                   ItemDropped="HandleTicketDroppedAsync"
-                                  ItemDisabled="@(ticket => _updatingTicketIds.Contains(ticket.Id))"
+                                  ItemDisabled="IsTicketDisabled"
                                   ApplyDropClassesOnDragStarted="false"
                                   Class="mud-width-full kanban-drop-container">
                     <ChildContent>
@@ -55,7 +72,7 @@
                                             <MudDivider Class="mb-1" />
                                         </div>
 
-                                        @if (!_tickets.Any(ticket => ticket.StatusId == status.Id))
+                                        @if (!_visibleTickets.Any(ticket => ticket.StatusId == status.Id))
                                         {
                                             <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary" Class="pa-4">No tickets</MudText>
                                         }
@@ -140,11 +157,23 @@
 </style>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> _authenticationState { get; set; } = default!;
+
     private readonly HashSet<Guid> _updatingTicketIds = [];
     private List<TicketPOCO> _tickets = [];
     private MudDropContainer<TicketPOCO>? _dropContainer;
+    private Guid _currentUserId;
     private string? _loadErrorMessage;
+    private bool _isAdministrator;
+    private bool _isCustomer;
     private bool _isLoading = true;
+    private bool _isOperator;
+    private bool _showOnlyMyTickets;
+
+    private IEnumerable<TicketPOCO> _visibleTickets => _isOperator && _showOnlyMyTickets
+        ? _tickets.Where(ticket => ticket.OperatorId == _currentUserId)
+        : _tickets;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -152,6 +181,13 @@
         {
             return;
         }
+
+        var authenticationState = await _authenticationState;
+        _currentUserId = Guid.Parse(authenticationState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        _isAdministrator = authenticationState.User.IsInRole(nameof(AppUserType.Administrator));
+        _isCustomer = authenticationState.User.IsInRole(nameof(AppUserType.Customer));
+        _isOperator = authenticationState.User.IsInRole(nameof(AppUserType.Operator));
+        _showOnlyMyTickets = _isOperator;
 
         await LoadTicketsAsync();
         StateHasChanged();
@@ -164,8 +200,7 @@
 
         try
         {
-            var client = HttpClientFactory.CreateClient("TicketSystemApi");
-            using var response = await client.GetAsync("api/tickets");
+            using var response = await ApiClient.GetAsync("api/tickets");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -198,7 +233,7 @@
         var ticket = dropInfo.Item;
         var newStatusId = short.Parse(dropInfo.DropzoneIdentifier, CultureInfo.InvariantCulture);
 
-        if (ticket.StatusId == newStatusId)
+        if (ticket.StatusId == newStatusId || !CanEditTicket(ticket))
         {
             return;
         }
@@ -213,22 +248,12 @@
 
         try
         {
-            var client = HttpClientFactory.CreateClient("TicketSystemApi");
-            using var response = await client.PutAsJsonAsync($"api/tickets/{ticket.Id}", ticket);
+            using var response = await ApiClient.PutAsJsonAsync($"api/tickets/{ticket.Id}", ticket);
 
-            if (!response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode || !await response.Content.ReadFromJsonAsync<bool>())
             {
                 RevertTicket(ticket, previousStatusId, previousClosedAt);
                 Snackbar.Add("Ticket status could not be updated.", Severity.Error);
-                return;
-            }
-
-            var wasUpdated = await response.Content.ReadFromJsonAsync<bool>();
-            if (!wasUpdated)
-            {
-                RevertTicket(ticket, previousStatusId, previousClosedAt);
-                Snackbar.Add("Ticket status could not be updated.", Severity.Error);
-                return;
             }
         }
         catch (HttpRequestException)
@@ -253,11 +278,35 @@
         }
     }
 
+    private async Task OpenCreateTicketDialogAsync()
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            FullWidth = true,
+            MaxWidth = MaxWidth.Small,
+            BackdropClick = false
+        };
+        var dialog = await DialogService.ShowAsync<CreateTicketDialog>("New ticket", options);
+        var result = await dialog.Result;
+
+        if (result is null || result.Canceled || result.Data is not TicketPOCO ticket)
+        {
+            return;
+        }
+
+        _tickets.Insert(0, ticket);
+        RefreshBoard();
+    }
+
     private async Task OpenTicketDialogAsync(TicketPOCO ticket)
     {
         var parameters = new DialogParameters
         {
-            [nameof(TicketDialog._ticket)] = ticket
+            [nameof(TicketDialog._ticket)] = ticket,
+            [nameof(TicketDialog._isReadOnly)] = !CanEditTicket(ticket),
+            [nameof(TicketDialog._canAssign)] = _isAdministrator,
+            [nameof(TicketDialog._canDelete)] = _isAdministrator
         };
         var options = new DialogOptions
         {
@@ -278,15 +327,25 @@
 
         if (result.Data is TicketPOCO updatedTicket)
         {
-            var ticketIndex = _tickets.FindIndex(ticket => ticket.Id == updatedTicket.Id);
+            var ticketIndex = _tickets.FindIndex(existingTicket => existingTicket.Id == updatedTicket.Id);
             _tickets[ticketIndex] = updatedTicket;
         }
         else if (result.Data is Guid deletedTicketId)
         {
-            _tickets.RemoveAll(ticket => ticket.Id == deletedTicketId);
+            _tickets.RemoveAll(existingTicket => existingTicket.Id == deletedTicketId);
         }
 
         RefreshBoard();
+    }
+
+    private bool CanEditTicket(TicketPOCO ticket)
+    {
+        return _isAdministrator || _isOperator && ticket.OperatorId == _currentUserId;
+    }
+
+    private bool IsTicketDisabled(TicketPOCO ticket)
+    {
+        return _updatingTicketIds.Contains(ticket.Id) || !CanEditTicket(ticket);
     }
 
     private void RevertTicket(TicketPOCO ticket, short previousStatusId, DateTimeOffset? previousClosedAt)
@@ -304,7 +363,7 @@
 
     private string GetTicketCountText(short statusId)
     {
-        var ticketCount = _tickets.Count(ticket => ticket.StatusId == statusId);
+        var ticketCount = _visibleTickets.Count(ticket => ticket.StatusId == statusId);
         return ticketCount == 1 ? "1 ticket" : $"{ticketCount} tickets";
     }
 }

@@ -1,6 +1,5 @@
 using Dapper;
 using Npgsql;
-using TicketSystem.Shared;
 using TicketSystem.Shared.DTO;
 using TicketSystem.Shared.POCO;
 
@@ -15,6 +14,15 @@ public sealed class AppUserDAL
     public AppUserDAL(NpgsqlDataSource dataSource)
     {
         this.dataSource = dataSource;
+    }
+
+    public async Task<AppUserLoginData?> GetForLoginAsync(string email, CancellationToken cancellationToken)
+    {
+        var sql = $"SELECT Id, Email, PasswordHash, UserTypeId FROM {AppUserTable} WHERE Email = @Email;";
+
+        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        var command = new CommandDefinition(sql, new { Email = email }, cancellationToken: cancellationToken);
+        return await connection.QuerySingleOrDefaultAsync<AppUserLoginData>(command);
     }
 
     public async Task<IReadOnlyList<AppUserDTO>> GetAllAsync(CancellationToken cancellationToken)
@@ -64,7 +72,7 @@ public sealed class AppUserDAL
         return await connection.QuerySingleOrDefaultAsync<AppUserDTO>(command);
     }
 
-    public async Task<AppUserDTO> CreateAsync(string email, string passwordHash, int userTypeId, CancellationToken cancellationToken)
+    public async Task<AppUserDTO> CreateAsync(string email, string passwordHash, int userTypeId, Guid updatedByUserId, CancellationToken cancellationToken)
     {
         var sql = $"""
             INSERT INTO "{AppUserTable}" ("Email", "PasswordHash", "UserTypeId", "UpdatedByUserId")
@@ -79,12 +87,12 @@ public sealed class AppUserDAL
             """;
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
-        var parameters = new { Email = email, PasswordHash = passwordHash, UserTypeId = userTypeId, UpdatedByUserId = SystemUserIds.AdministratorId };
+        var parameters = new { Email = email, PasswordHash = passwordHash, UserTypeId = userTypeId, UpdatedByUserId = updatedByUserId };
         var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
         return await connection.QuerySingleAsync<AppUserDTO>(command);
     }
 
-    public async Task<AppUserDTO?> UpdateAsync(Guid id, string email, string? passwordHash, CancellationToken cancellationToken)
+    public async Task<AppUserDTO?> UpdateAsync(Guid id, string email, string? passwordHash, Guid updatedByUserId, CancellationToken cancellationToken)
     {
         var updatePassword = passwordHash is not null;
         var sql = updatePassword
@@ -117,7 +125,7 @@ public sealed class AppUserDAL
         var parameters = new DynamicParameters();
         parameters.Add("Id", id);
         parameters.Add("Email", email);
-        parameters.Add("UpdatedByUserId", SystemUserIds.AdministratorId);
+        parameters.Add("UpdatedByUserId", updatedByUserId);
 
         if (updatePassword)
         {

@@ -9,15 +9,39 @@
     <MudAppBar>
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
             <MudText Typo="Typo.h6">Ticket System</MudText>
-            <MudButton Href="/" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Dashboard">Overview</MudButton>
-            <MudButton Href="/tickets" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Inbox">Tickets</MudButton>
-            <MudButton Href="/users" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.People">Users</MudButton>
-            <MudButton Href="/knowledge-base" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.MenuBook">Knowledge base</MudButton>
+            <AuthorizeView Roles="@nameof(AppUserType.Administrator)">
+                <MudButton Href="/" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Dashboard">Overview</MudButton>
+            </AuthorizeView>
+            <AuthorizeView>
+                <Authorized>
+                    <MudButton Href="/tickets" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Inbox">Tickets</MudButton>
+                </Authorized>
+            </AuthorizeView>
+            <AuthorizeView Roles="@nameof(AppUserType.Administrator)">
+                <MudButton Href="/users" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.People">Users</MudButton>
+            </AuthorizeView>
+            <AuthorizeView Roles="Operator,Administrator">
+                <MudButton Href="/knowledge-base" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.MenuBook">Knowledge base</MudButton>
+            </AuthorizeView>
         </MudStack>
         <MudSpacer />
-        <MudIconButton Icon="@Icons.Material.Outlined.Search" Color="Color.Inherit" aria-label="Search" />
-        <MudIconButton Icon="@Icons.Material.Outlined.NotificationsNone" Color="Color.Inherit" aria-label="Notifications" />
-        <MudAvatar Color="Color.Primary" Size="Size.Small"><MudIcon Icon="@Icons.Material.Outlined.Person" /></MudAvatar>
+        <AuthorizeView Roles="@nameof(AppUserType.Administrator)">
+            <MudIconButton Icon="@Icons.Material.Outlined.Search" Color="Color.Inherit" aria-label="Search" />
+            <MudIconButton Icon="@Icons.Material.Outlined.NotificationsNone" Color="Color.Inherit" aria-label="Notifications" />
+        </AuthorizeView>
+        <AuthorizeView>
+            <Authorized Context="authenticationState">
+                <MudText Typo="Typo.body2">@authenticationState.User.Identity?.Name</MudText>
+                <MudAvatar Color="Color.Primary" Size="Size.Small"><MudIcon Icon="@Icons.Material.Outlined.Person" /></MudAvatar>
+                <form method="post" action="/auth/logout">
+                    <AntiforgeryToken />
+                    <MudIconButton ButtonType="ButtonType.Submit" Icon="@Icons.Material.Outlined.Logout" Color="Color.Inherit" aria-label="Logout" />
+                </form>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Href="/login" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Login">Login</MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
     </MudAppBar>
 
     <MudMainContent>

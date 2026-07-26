@@ -29,6 +29,11 @@ WEB_PORT=8180
 WEB_ORIGIN=http://localhost:8180
 API_PORT=8081
 REALTIME_PORT=8082
+
+JWT_ISSUER=TicketSystem.Api
+JWT_AUDIENCE=TicketSystem.Web
+JWT_SIGNING_KEY=replace-with-a-random-secret-of-at-least-32-characters
+ENABLE_QUICK_LOGIN=true
 ```
 
 `deploy/.env` contains the following settings:
@@ -43,8 +48,16 @@ REALTIME_PORT=8082
 | `WEB_ORIGIN` | No | `http://localhost:8180` | `http://localhost:8180` | Browser origin allowed by the Realtime service. Update it when `WEB_PORT` or the public URL changes. |
 | `API_PORT` | No | `8081` | `8081` | API port exposed on the host. |
 | `REALTIME_PORT` | No | `8082` | `8082` | Realtime port exposed on the host. |
+| `JWT_ISSUER` | No | `TicketSystem.Api` | `TicketSystem.Api` | JWT issuer used by the API. |
+| `JWT_AUDIENCE` | No | `TicketSystem.Web` | `TicketSystem.Web` | JWT audience validated by the API. |
+| `JWT_SIGNING_KEY` | Yes | A random secret of at least 32 characters | None | Signs API access tokens. Never commit a real value. |
+| `ENABLE_QUICK_LOGIN` | No | `true` | `false` | Shows temporary test-account login buttons. Set to `false` outside local testing. |
 
 All ASP.NET containers listen on port `8080` internally. The Web container calls the API through `http://api:8080`, and the API connects to PostgreSQL through `database:5432`. Host port settings do not change these internal addresses.
+
+The Web authentication cookie lasts eight hours. Its encryption keys are stored in the `web-data-protection` Docker volume, so active cookies remain valid when the standard Web container is recreated. Web hot reload uses a separate `web-watch-data-protection` volume.
+
+When `ENABLE_QUICK_LOGIN=true`, the login page shows buttons for the seeded Administrator, Customer, and Support accounts. This test-only feature uses the same cookie and JWT flow as the regular email/password form.
 
 ## Standard startup
 
@@ -133,12 +146,12 @@ Stop the containers while preserving PostgreSQL data:
 docker compose --env-file deploy/.env -f deploy/compose.yaml down
 ```
 
-Stop the containers and permanently delete PostgreSQL data:
+Stop the containers and permanently delete PostgreSQL data and Web authentication keys:
 
 ```powershell
 docker compose --env-file deploy/.env -f deploy/compose.yaml down --volumes
 ```
 
-To recreate an empty database, run the destructive command above and then start the complete stack with `--build`. The API creates the schema by applying all migrations.
+To recreate an empty database, run the destructive command above and then start the complete stack with `--build`. The API creates the schema by applying all migrations. Deleting the authentication-key volumes also signs out every active user.
 
 For a public deployment, set `WEB_ORIGIN` to the public Web URL. TLS should be terminated by a reverse proxy in front of these HTTP services.

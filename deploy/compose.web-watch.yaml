@@ -4,9 +4,11 @@ services:
       target: build
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      Authentication__EnableQuickLogin: ${ENABLE_QUICK_LOGIN:-true}
       DOTNET_USE_POLLING_FILE_WATCHER: "1"
     volumes:
       - ..:/src
+      - web-watch-data-protection:/var/ticketsystem/data-protection
       - web-bin:/src/src/TicketSystem.Web/bin
       - web-obj:/src/src/TicketSystem.Web/obj
       - shared-bin:/src/src/TicketSystem.Shared/bin
@@ -14,6 +16,7 @@ services:
     command: ["dotnet", "watch", "--non-interactive", "--project", "src/TicketSystem.Web/TicketSystem.Web.csproj", "run", "--no-launch-profile"]
 
 volumes:
+  web-watch-data-protection:
   web-bin:
   web-obj:
   shared-bin:

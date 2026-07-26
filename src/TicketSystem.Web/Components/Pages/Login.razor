@@ -1,0 +1,75 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@inject IConfiguration Configuration
+@inject NavigationManager Navigation
+
+<PageTitle>Login | Ticket System</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="pa-8">
+    <MudPaper Class="pa-8">
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h4">Login</MudText>
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+            }
+
+            <form method="post" action="/auth/login">
+                <AntiforgeryToken />
+                <input type="hidden" name="ReturnUrl" value="@_returnUrl" />
+                <MudStack Spacing="3">
+                    <MudTextField T="string" Label="Email" name="Email" InputType="InputType.Email" Variant="Variant.Outlined" Required="true" />
+                    <MudTextField T="string" Label="Password" name="Password" InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">Login</MudButton>
+                </MudStack>
+            </form>
+
+            @if (Configuration.GetValue<bool>("Authentication:EnableQuickLogin"))
+            {
+                <MudDivider />
+                <MudText Typo="Typo.subtitle2">Quick login</MudText>
+                <MudStack Spacing="1">
+                    @foreach (var quickLogin in _quickLogins)
+                    {
+                        <form method="post" action="/auth/quick-login">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="Email" value="@quickLogin.Email" />
+                            <input type="hidden" name="ReturnUrl" value="@_returnUrl" />
+                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true">@quickLogin.Name</MudButton>
+                        </form>
+                    }
+                </MudStack>
+            }
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private readonly IReadOnlyList<QuickLoginOption> _quickLogins =
+    [
+        new("Administrator", "admin@ticketsystem.local"),
+        new("Customer 1", "customer1@ticketsystem.local"),
+        new("Customer 2", "customer2@ticketsystem.local"),
+        new("Support 1", "support1@ticketsystem.local"),
+        new("Support 2", "support2@ticketsystem.local")
+    ];
+    private string? _errorMessage;
+    private string? _returnUrl;
+
+    protected override void OnInitialized()
+    {
+        var query = new Uri(Navigation.Uri).Query;
+        var queryValues = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(query);
+        _returnUrl = queryValues.TryGetValue("returnUrl", out var returnUrl) ? returnUrl.ToString() : null;
+        _errorMessage = queryValues.TryGetValue("error", out var error)
+            ? error == "invalid"
+                ? "Email or password is incorrect."
+                : error == "expired"
+                    ? "Your session has expired. Please log in again."
+                    : "Login is currently unavailable."
+            : null;
+    }
+
+    private sealed record QuickLoginOption(string Name, string Email);
+}

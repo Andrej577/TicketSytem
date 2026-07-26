@@ -1,0 +1,80 @@
+@using System.Text.Json
+@inject TicketSystemApiClient ApiClient
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudStack Spacing="3">
+                <MudTextField T="string" Label="Title" @bind-Value="_title" Variant="Variant.Outlined" Required="true" RequiredError="Title is required." Disabled="_isSaving" />
+                <MudTextField T="string" Label="Content" @bind-Value="_content" Variant="Variant.Outlined" Lines="6" Required="true" RequiredError="Content is required." Disabled="_isSaving" />
+                <MudText Typo="Typo.caption">The ticket will be created with Open status and Normal priority.</MudText>
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Cancel" Disabled="_isSaving">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Add" OnClick="CreateAsync" Disabled="_isSaving">Create ticket</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance _dialogInstance { get; set; } = null!;
+
+    private MudForm? _form;
+    private string _content = string.Empty;
+    private string _title = string.Empty;
+    private bool _isSaving;
+
+    private async Task CreateAsync()
+    {
+        await _form!.ValidateAsync();
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _isSaving = true;
+
+        try
+        {
+            using var response = await ApiClient.PostAsJsonAsync("api/tickets", new
+            {
+                Title = _title,
+                Content = _content
+            });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Ticket could not be created.", Severity.Error);
+                return;
+            }
+
+            var ticket = await response.Content.ReadFromJsonAsync<TicketPOCO>();
+            _dialogInstance.Close(DialogResult.Ok(ticket));
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("The API is currently unavailable.", Severity.Error);
+        }
+        catch (JsonException)
+        {
+            Snackbar.Add("The API returned an invalid ticket response.", Severity.Error);
+        }
+        catch (TaskCanceledException)
+        {
+            Snackbar.Add("The ticket request timed out.", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        _dialogInstance.Cancel();
+    }
+}

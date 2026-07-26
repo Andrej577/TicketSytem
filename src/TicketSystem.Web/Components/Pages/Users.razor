@@ -1,8 +1,9 @@
 @page "/users"
+@attribute [Authorize(Roles = nameof(AppUserType.Administrator))]
 @using System.Globalization
 @using System.Text.Json
 @inject IDialogService DialogService
-@inject IHttpClientFactory HttpClientFactory
+@inject TicketSystemApiClient ApiClient
 
 <PageTitle>Users | Ticket System</PageTitle>
 
@@ -126,8 +127,7 @@
 
         try
         {
-            var client = HttpClientFactory.CreateClient("TicketSystemApi");
-            using var response = await client.GetAsync("api/app-users/users-with-email-edited");
+            using var response = await ApiClient.GetAsync("api/app-users/users-with-email-edited");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -208,8 +208,7 @@
 
     private async Task<AppUserPOCO> CreateAppUserPOCOAsync(AppUserDTO appUser)
     {
-        var client = HttpClientFactory.CreateClient("TicketSystemApi");
-        var updatedByUser = await client.GetFromJsonAsync<AppUserDTO>($"api/app-users/{appUser.UpdatedByUserId}");
+        var updatedByUser = await ApiClient.GetFromJsonAsync<AppUserDTO>($"api/app-users/{appUser.UpdatedByUserId}");
 
         return new AppUserPOCO(appUser)
         {

@@ -15,6 +15,9 @@ RUN dotnet publish "src/TicketSystem.Web/TicketSystem.Web.csproj" \
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+RUN mkdir -p /var/ticketsystem/data-protection \
+    && touch /var/ticketsystem/data-protection/.keep \
+    && chown -R app:app /var/ticketsystem
 USER app
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "TicketSystem.Web.dll"]

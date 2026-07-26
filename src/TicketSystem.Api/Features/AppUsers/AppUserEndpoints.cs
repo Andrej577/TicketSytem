@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using Npgsql;
 using TicketSystem.DAL.AppUsers;
 using TicketSystem.Shared.DTO;
+using TicketSystem.Shared.Enums;
 using TicketSystem.Shared.POCO;
 
 namespace TicketSystem.Api.Features.AppUsers;
@@ -9,7 +11,9 @@ public static class AppUserEndpoints
 {
     public static IEndpointRouteBuilder MapAppUserEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup("/api/app-users").WithTags("App users");
+        var group = endpoints.MapGroup("/api/app-users")
+            .RequireAuthorization(policy => policy.RequireRole(nameof(AppUserType.Administrator)))
+            .WithTags("App users");
 
         group.MapGet("/", GetAppUsers).WithName("GetAppUsers").Produces<IReadOnlyList<AppUserDTO>>(StatusCodes.Status200OK);
         group.MapGet("/users-with-email-edited", GetUsersWithEmailEdited).WithName("GetUsersWithEmailEdited").Produces<IReadOnlyList<AppUserPOCO>>(StatusCodes.Status200OK);
@@ -37,12 +41,12 @@ public static class AppUserEndpoints
         return appUser is null ? Results.NotFound() : Results.Ok(appUser);
     }
 
-    private static async Task<IResult> CreateAppUser(CreateAppUserRequest request, AppUserDAL appUserDAL, CancellationToken cancellationToken)
+    private static async Task<IResult> CreateAppUser(CreateAppUserRequest request, ClaimsPrincipal user, AppUserDAL appUserDAL, CancellationToken cancellationToken)
     {
         try
         {
             var passwordHash = PasswordHasher.Hash(request.Password);
-            var appUser = await appUserDAL.CreateAsync(request.Email!, passwordHash, request.UserTypeId, cancellationToken);
+            var appUser = await appUserDAL.CreateAsync(request.Email!, passwordHash, request.UserTypeId, GetCurrentUserId(user), cancellationToken);
             return Results.Created($"/api/app-users/{appUser.Id}", appUser);
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
@@ -51,12 +55,12 @@ public static class AppUserEndpoints
         }
     }
 
-    private static async Task<IResult> UpdateAppUser(Guid id, UpdateAppUserRequest request, AppUserDAL appUserDAL, CancellationToken cancellationToken)
+    private static async Task<IResult> UpdateAppUser(Guid id, UpdateAppUserRequest request, ClaimsPrincipal user, AppUserDAL appUserDAL, CancellationToken cancellationToken)
     {
         try
         {
             var passwordHash = request.Password is null ? null : PasswordHasher.Hash(request.Password);
-            var appUser = await appUserDAL.UpdateAsync(id, request.Email!, passwordHash, cancellationToken);
+            var appUser = await appUserDAL.UpdateAsync(id, request.Email!, passwordHash, GetCurrentUserId(user), cancellationToken);
             return appUser is null ? Results.NotFound() : Results.Ok(appUser);
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
@@ -76,5 +80,10 @@ public static class AppUserEndpoints
         {
             return Results.Conflict(new { message = "The app user is still referenced by other records." });
         }
+    }
+
+    private static Guid GetCurrentUserId(ClaimsPrincipal user)
+    {
+        return Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     }
 }

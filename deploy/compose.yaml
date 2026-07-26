@@ -31,6 +31,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=database;Port=5432;Database=${POSTGRES_DATABASE:-ticket_system};Username=${POSTGRES_USER:-ticket_system};Password=${POSTGRES_PASSWORD}
+      Jwt__Issuer: ${JWT_ISSUER:-TicketSystem.Api}
+      Jwt__Audience: ${JWT_AUDIENCE:-TicketSystem.Web}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in deploy/.env}
     depends_on:
       database:
         condition: service_healthy
@@ -64,6 +67,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       Api__BaseUrl: http://api:8080
+      Authentication__EnableQuickLogin: ${ENABLE_QUICK_LOGIN:-false}
+      DataProtection__KeysPath: /var/ticketsystem/data-protection
+    volumes:
+      - web-data-protection:/var/ticketsystem/data-protection
     ports:
       - "${WEB_PORT:-8180}:8080"
     networks:
@@ -71,6 +78,7 @@ services:
 
 volumes:
   postgres-data:
+  web-data-protection:
 
 networks:
   backend:

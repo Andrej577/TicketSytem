@@ -1,5 +1,7 @@
 ﻿@using System.Net.Http
 @using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
@@ -8,8 +10,10 @@
 @using Microsoft.JSInterop
 @using MudBlazor
 @using TicketSystem.Shared.DTO
+@using TicketSystem.Shared.Enums
 @using TicketSystem.Shared.POCO
 @using TicketSystem.Web
+@using TicketSystem.Web.Authentication
 @using TicketSystem.Web.Components
 @using TicketSystem.Web.Components.Dialogs
 @using TicketSystem.Web.Mappers

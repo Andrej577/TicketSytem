@@ -1,4 +1,5 @@
 using Npgsql;
+using TicketSystem.Api.Features.Authentication;
 using TicketSystem.Api.Features.AppUsers;
 using TicketSystem.Api.Features.Tickets;
 using TicketSystem.Api.Features.UpdateDatabase;
@@ -11,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 DapperConfiguration.Configure();
 
 builder.Services.AddControllers();
+builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddDatabaseUpdater();
 builder.Services.AddSingleton(serviceProvider =>
 {
@@ -33,8 +35,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
+app.MapAuthenticationEndpoints();
 app.MapAppUserEndpoints();
 app.MapTicketEndpoints();
 

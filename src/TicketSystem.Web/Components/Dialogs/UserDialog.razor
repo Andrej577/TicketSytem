@@ -3,7 +3,7 @@
 @using System.Text.Json
 @using TicketSystem.Shared.DTO
 @using TicketSystem.Shared.Enums
-@inject IHttpClientFactory HttpClientFactory
+@inject TicketSystemApiClient ApiClient
 @inject ISnackbar Snackbar
 
 <MudDialog>
@@ -119,10 +119,9 @@
                 return;
             }
 
-            var client = HttpClientFactory.CreateClient("TicketSystemApi");
             using var response = _isEditMode
-                ? await UpdateUserAsync(client)
-                : await CreateUserAsync(client);
+                ? await UpdateUserAsync()
+                : await CreateUserAsync();
 
             if (response.IsSuccessStatusCode)
             {
@@ -159,9 +158,9 @@
         }
     }
 
-    private Task<HttpResponseMessage> CreateUserAsync(HttpClient client)
+    private Task<HttpResponseMessage> CreateUserAsync()
     {
-        return client.PostAsJsonAsync("api/app-users", new
+        return ApiClient.PostAsJsonAsync("api/app-users", new
         {
             Email = _model.Email.Trim(),
             _model.Password,
@@ -169,9 +168,9 @@
         });
     }
 
-    private Task<HttpResponseMessage> UpdateUserAsync(HttpClient client)
+    private Task<HttpResponseMessage> UpdateUserAsync()
     {
-        return client.PutAsJsonAsync($"api/app-users/{User!.Id}", new
+        return ApiClient.PutAsJsonAsync($"api/app-users/{User!.Id}", new
         {
             Email = _model.Email.Trim(),
             Password = string.IsNullOrWhiteSpace(_model.Password) ? null : _model.Password

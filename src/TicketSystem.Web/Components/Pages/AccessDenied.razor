@@ -1,0 +1,15 @@
+@page "/access-denied"
+@attribute [AllowAnonymous]
+
+<PageTitle>Access denied | Ticket System</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-8">
+    <MudPaper Class="pa-8">
+        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+            <MudIcon Icon="@Icons.Material.Outlined.Lock" Color="Color.Warning" Size="Size.Large" />
+            <MudText Typo="Typo.h5">Access denied</MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center">You do not have permission to view this page.</MudText>
+            <MudButton Href="/tickets" Variant="Variant.Filled" Color="Color.Primary">Go to tickets</MudButton>
+        </MudStack>
+    </MudPaper>
+</MudContainer>

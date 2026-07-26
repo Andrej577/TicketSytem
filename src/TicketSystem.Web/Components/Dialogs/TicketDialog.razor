@@ -1,25 +1,38 @@
 ﻿@using System.Globalization
 @using System.Text.Json
 @inject IDialogService DialogService
-@inject IHttpClientFactory HttpClientFactory
+@inject TicketSystemApiClient ApiClient
 @inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
         <MudStack Spacing="3">
-            <MudTextField T="string" Label="Title" @bind-Value="_editedTicket.Title" Variant="Variant.Outlined" />
+            <MudTextField T="string" Label="Title" @bind-Value="_editedTicket.Title" ReadOnly="_isReadOnly" Variant="Variant.Outlined" />
 
             <MudGrid Spacing="2">
                 <MudItem xs="6">
                     <MudTextField T="string" Label="Sender email" Value="@_editedTicket.CustomerEmail" ReadOnly="true" Variant="Variant.Outlined" />
                 </MudItem>
                 <MudItem xs="6">
-                    <MudTextField T="string" Label="Assigned to" Value="@(_editedTicket.OperatorEmail ?? "Unassigned")" ReadOnly="true" Variant="Variant.Outlined" />
+                    @if (_canAssign)
+                    {
+                        <MudSelect T="Guid?" Label="Assigned to" @bind-Value="_editedTicket.OperatorId" Variant="Variant.Outlined" Disabled="_isLoadingOperators">
+                            <MudSelectItem T="Guid?" Value="@((Guid?)null)">Unassigned</MudSelectItem>
+                            @foreach (var appOperator in _operators)
+                            {
+                                <MudSelectItem T="Guid?" Value="@((Guid?)appOperator.Id)">@appOperator.Email</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                    else
+                    {
+                        <MudTextField T="string" Label="Assigned to" Value="@(_editedTicket.OperatorEmail ?? "Unassigned")" ReadOnly="true" Variant="Variant.Outlined" />
+                    }
                 </MudItem>
                 <MudItem xs="12">
                     <MudStack Spacing="1">
                         <MudText Typo="Typo.body2">Priority</MudText>
-                        <MudToggleGroup T="short" @bind-Value="_editedTicket.PriorityId" Vertical="false" Color="@GetPriorityColor()" Disabled="@(_isLoadingPriorities || _priorities.Count == 0)" Class="mud-width-full">
+                        <MudToggleGroup T="short" @bind-Value="_editedTicket.PriorityId" Vertical="false" Color="@GetPriorityColor()" Disabled="@(_isReadOnly || _isLoadingPriorities || _priorities.Count == 0)" Class="mud-width-full">
                             @foreach (var priority in _priorities)
                             {
                                 <MudToggleItem T="short" Value="@priority.Id" Text="@priority.DisplayName" />
@@ -30,7 +43,7 @@
                 <MudItem xs="12">
                     <MudStack Spacing="1">
                         <MudText Typo="Typo.body2">Status</MudText>
-                        <MudToggleGroup T="short" @bind-Value="_editedTicket.StatusId" Vertical="false" Color="@GetStatusColor()" Class="mud-width-full">
+                        <MudToggleGroup T="short" @bind-Value="_editedTicket.StatusId" Vertical="false" Color="@GetStatusColor()" Disabled="_isReadOnly" Class="mud-width-full">
                             @foreach (var status in TicketStatusOptions.All)
                             {
                                 <MudToggleItem T="short" Value="@status.Id" Text="@status.Name" />
@@ -40,12 +53,12 @@
                 </MudItem>
             </MudGrid>
 
-            @if (_isLoadingPriorities)
+            @if (_isLoadingPriorities || _isLoadingOperators)
             {
                 <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
             }
 
-            <MudTextField T="string" Label="Content" @bind-Value="_editedTicket.Content" Lines="6" Variant="Variant.Outlined" />
+            <MudTextField T="string" Label="Content" @bind-Value="_editedTicket.Content" ReadOnly="_isReadOnly" Lines="6" Variant="Variant.Outlined" />
 
             <MudStack Spacing="0">
                 <MudText Typo="Typo.caption">Created @_editedTicket.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
@@ -56,11 +69,17 @@
 
     <DialogActions>
         <MudStack Row="true" AlignItems="AlignItems.Center" Class="px-4 mud-width-full">
-            <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)">Delete</MudButton>
+            @if (_canDelete)
+            {
+                <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)">Delete</MudButton>
+            }
             <MudSpacer />
             <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Chat" Disabled="true">Open chat</MudButton>
-            <MudButton Variant="Variant.Text" OnClick="Cancel" Disabled="@(_isSaving || _isDeleting)">Cancel</MudButton>
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Outlined.Save" OnClick="SaveAsync" Disabled="@(_isLoadingPriorities || _priorities.Count == 0 || _isSaving || _isDeleting)">Save</MudButton>
+            <MudButton Variant="Variant.Text" OnClick="Cancel" Disabled="@(_isSaving || _isDeleting)">@(_isReadOnly ? "Close" : "Cancel")</MudButton>
+            @if (!_isReadOnly)
+            {
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Outlined.Save" OnClick="SaveAsync" Disabled="@(_isLoadingPriorities || _isLoadingOperators || _priorities.Count == 0 || _isSaving || _isDeleting)">Save</MudButton>
+            }
         </MudStack>
     </DialogActions>
 </MudDialog>
@@ -72,9 +91,20 @@
     [Parameter]
     public TicketPOCO _ticket { get; set; } = null!;
 
+    [Parameter]
+    public bool _isReadOnly { get; set; }
+
+    [Parameter]
+    public bool _canAssign { get; set; }
+
+    [Parameter]
+    public bool _canDelete { get; set; }
+
     private TicketPOCO _editedTicket = new();
+    private List<AppUserDTO> _operators = [];
     private List<TicketPriorityDTO> _priorities = [];
     private bool _isDeleting;
+    private bool _isLoadingOperators;
     private bool _isLoadingPriorities = true;
     private bool _isSaving;
 
@@ -82,14 +112,18 @@
     {
         _editedTicket = _ticket.Copy();
         await LoadPrioritiesAsync();
+
+        if (_canAssign)
+        {
+            await LoadOperatorsAsync();
+        }
     }
 
     private async Task LoadPrioritiesAsync()
     {
         try
         {
-            var client = HttpClientFactory.CreateClient("TicketSystemApi");
-            using var response = await client.GetAsync("api/ticket-priorities");
+            using var response = await ApiClient.GetAsync("api/ticket-priorities");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -117,6 +151,41 @@
         }
     }
 
+    private async Task LoadOperatorsAsync()
+    {
+        _isLoadingOperators = true;
+
+        try
+        {
+            using var response = await ApiClient.GetAsync("api/app-users");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Support users could not be loaded.", Severity.Error);
+                return;
+            }
+
+            var users = await response.Content.ReadFromJsonAsync<List<AppUserDTO>>() ?? [];
+            _operators = users.Where(user => user.UserTypeId == (int)AppUserType.Operator).ToList();
+        }
+        catch (HttpRequestException)
+        {
+            Snackbar.Add("The API is currently unavailable.", Severity.Error);
+        }
+        catch (JsonException)
+        {
+            Snackbar.Add("The API returned an invalid users response.", Severity.Error);
+        }
+        catch (TaskCanceledException)
+        {
+            Snackbar.Add("The users request timed out.", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingOperators = false;
+        }
+    }
+
     private async Task SaveAsync()
     {
         _isSaving = true;
@@ -125,8 +194,7 @@
         {
             _editedTicket.ClosedAt = _editedTicket.StatusId == TicketStatusOptions.ClosedId ? _editedTicket.ClosedAt ?? DateTimeOffset.Now : null;
 
-            var client = HttpClientFactory.CreateClient("TicketSystemApi");
-            using var response = await client.PutAsJsonAsync($"api/tickets/{_editedTicket.Id}", _editedTicket);
+            using var response = await ApiClient.PutAsJsonAsync($"api/tickets/{_editedTicket.Id}", _editedTicket);
 
             if (!response.IsSuccessStatusCode || !await response.Content.ReadFromJsonAsync<bool>())
             {
@@ -138,6 +206,13 @@
             _editedTicket.PriorityDisplayName = priority.DisplayName;
             _editedTicket.PriorityImpact = priority.Impact;
             _editedTicket.UpdatedAt = DateTimeOffset.Now;
+
+            if (_canAssign)
+            {
+                _editedTicket.OperatorEmail = _editedTicket.OperatorId.HasValue
+                    ? _operators.Single(appOperator => appOperator.Id == _editedTicket.OperatorId.Value).Email
+                    : null;
+            }
 
             _dialogInstance.Close(DialogResult.Ok(_editedTicket));
         }
@@ -171,8 +246,7 @@
 
         try
         {
-            var client = HttpClientFactory.CreateClient("TicketSystemApi");
-            using var response = await client.DeleteAsync($"api/tickets/{_editedTicket.Id}");
+            using var response = await ApiClient.DeleteAsync($"api/tickets/{_editedTicket.Id}");
 
             if (!response.IsSuccessStatusCode)
             {
