@@ -248,6 +248,14 @@ VALUES
     (2, 'published', 'Published'),
     (3, 'archived', 'Archived');
 
+INSERT INTO "KnowledgeCategory" ("Name")
+VALUES
+    ('General'),
+    ('Account and access'),
+    ('Ticket management'),
+    ('Troubleshooting')
+ON CONFLICT ("Name") DO NOTHING;
+
 INSERT INTO "AppUser" ("Id", "Email", "PasswordHash", "UserTypeId", "CreatedAt", "UpdatedAt", "UpdatedByUserId")
 VALUES (
     '2d6781ce-863a-4ca4-83c3-c4d521f8e23d',

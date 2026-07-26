@@ -41,12 +41,13 @@ public static class AppUserEndpoints
         return appUser is null ? Results.NotFound() : Results.Ok(appUser);
     }
 
-    private static async Task<IResult> CreateAppUser(CreateAppUserRequest request, ClaimsPrincipal user, AppUserDAL appUserDAL, CancellationToken cancellationToken)
+    private static async Task<IResult> CreateAppUser(CreateAppUserRequest request, ClaimsPrincipal user, AppUserDAL appUserDAL, AppUserRealtimeNotifier appUserRealtimeNotifier, CancellationToken cancellationToken)
     {
         try
         {
             var passwordHash = PasswordHasher.Hash(request.Password);
             var appUser = await appUserDAL.CreateAsync(request.Email!, passwordHash, request.UserTypeId, GetCurrentUserId(user), cancellationToken);
+            await appUserRealtimeNotifier.NotifyChangedAsync();
             return Results.Created($"/api/app-users/{appUser.Id}", appUser);
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
@@ -55,13 +56,19 @@ public static class AppUserEndpoints
         }
     }
 
-    private static async Task<IResult> UpdateAppUser(Guid id, UpdateAppUserRequest request, ClaimsPrincipal user, AppUserDAL appUserDAL, CancellationToken cancellationToken)
+    private static async Task<IResult> UpdateAppUser(Guid id, UpdateAppUserRequest request, ClaimsPrincipal user, AppUserDAL appUserDAL, AppUserRealtimeNotifier appUserRealtimeNotifier, CancellationToken cancellationToken)
     {
         try
         {
             var passwordHash = request.Password is null ? null : PasswordHasher.Hash(request.Password);
             var appUser = await appUserDAL.UpdateAsync(id, request.Email!, passwordHash, GetCurrentUserId(user), cancellationToken);
-            return appUser is null ? Results.NotFound() : Results.Ok(appUser);
+            if (appUser is null)
+            {
+                return Results.NotFound();
+            }
+
+            await appUserRealtimeNotifier.NotifyChangedAsync();
+            return Results.Ok(appUser);
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.UniqueViolation)
         {
@@ -69,12 +76,18 @@ public static class AppUserEndpoints
         }
     }
 
-    private static async Task<IResult> DeleteAppUser(Guid id, AppUserDAL appUserDAL, CancellationToken cancellationToken)
+    private static async Task<IResult> DeleteAppUser(Guid id, AppUserDAL appUserDAL, AppUserRealtimeNotifier appUserRealtimeNotifier, CancellationToken cancellationToken)
     {
         try
         {
             var deletedRows = await appUserDAL.DeleteAsync(id, cancellationToken);
-            return deletedRows == 0 ? Results.NotFound() : Results.NoContent();
+            if (deletedRows == 0)
+            {
+                return Results.NotFound();
+            }
+
+            await appUserRealtimeNotifier.NotifyChangedAsync();
+            return Results.NoContent();
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.ForeignKeyViolation)
         {

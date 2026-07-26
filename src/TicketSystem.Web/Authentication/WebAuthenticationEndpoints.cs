@@ -135,12 +135,13 @@ public static class WebAuthenticationEndpoints
         }
 
         if (isLocalReturnUrl && role == nameof(AppUserType.Operator)
-            && (localReturnUrl.StartsWith("/tickets", StringComparison.OrdinalIgnoreCase) || localReturnUrl.StartsWith("/knowledge-base", StringComparison.OrdinalIgnoreCase)))
+            && (localReturnUrl.StartsWith("/tickets", StringComparison.OrdinalIgnoreCase) || localReturnUrl.StartsWith("/knowledge-base", StringComparison.OrdinalIgnoreCase) || localReturnUrl.StartsWith("/settings", StringComparison.OrdinalIgnoreCase)))
         {
             return localReturnUrl;
         }
 
-        if (isLocalReturnUrl && role == nameof(AppUserType.Customer) && localReturnUrl.StartsWith("/tickets", StringComparison.OrdinalIgnoreCase))
+        if (isLocalReturnUrl && role == nameof(AppUserType.Customer)
+            && (localReturnUrl.StartsWith("/tickets", StringComparison.OrdinalIgnoreCase) || localReturnUrl.StartsWith("/settings", StringComparison.OrdinalIgnoreCase)))
         {
             return localReturnUrl;
         }

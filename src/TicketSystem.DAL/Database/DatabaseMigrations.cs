@@ -2,14 +2,15 @@ namespace TicketSystem.DAL.Database;
 
 public static class DatabaseMigrations
 {
-    public static int DatabaseVersion { get; } = 4;
+    public static int DatabaseVersion { get; } = 5;
 
     public static IReadOnlyList<DatabaseMigration> All { get; } =
     [
         new(1, UpgradeTo1()),
         new(2, UpgradeTo2()),
         new(3, UpgradeTo3()),
-        new(4, UpgradeTo4())
+        new(4, UpgradeTo4()),
+        new(5, UpgradeTo5())
     ];
 
     private static string UpgradeTo1()
@@ -325,6 +326,19 @@ public static class DatabaseMigrations
                 ('customer2@ticketsystem.local', 'pbkdf2-sha256$100000$YpD12bK6eZYl72w0OcEeXA==$ejIdWPs6McK0WIkuG5PzK9cw+LXvqCJ76F33XKWfiQ4=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
                 ('support1@ticketsystem.local', 'pbkdf2-sha256$100000$bVeYhVewq6bgqstV7VxaYg==$sCeDxZbSVh9lZcMLZZfExy+4VLvAeZi8EekO/mcuWrM=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
                 ('support2@ticketsystem.local', 'pbkdf2-sha256$100000$hGz/qId57Ox8lR2MHCv5Ag==$ca952K+yHQFEDAwalyXwtTmOuuAviwh5y94EPCJLWt4=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d');
+            """;
+    }
+
+    private static string UpgradeTo5()
+    {
+        return """
+            INSERT INTO "KnowledgeCategory" ("Name")
+            VALUES
+                ('General'),
+                ('Account and access'),
+                ('Ticket management'),
+                ('Troubleshooting')
+            ON CONFLICT ("Name") DO NOTHING;
             """;
     }
 }

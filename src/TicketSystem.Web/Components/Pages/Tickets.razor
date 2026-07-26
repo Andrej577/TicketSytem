@@ -165,11 +165,14 @@
     private Task<AuthenticationState> _authenticationState { get; set; } = default!;
 
     private readonly HashSet<Guid> _updatingTicketIds = [];
+    private readonly HashSet<Guid> _ticketIdsRemovedDuringLoad = [];
     private readonly Dictionary<Guid, TicketPOCO> _ticketsReceivedDuringLoad = [];
     private List<TicketPOCO> _tickets = [];
     private MudDropContainer<TicketPOCO>? _dropContainer;
     private HubConnection? _ticketHubConnection;
     private IDisposable? _ticketCreatedSubscription;
+    private IDisposable? _ticketDeletedSubscription;
+    private IDisposable? _ticketUpdatedSubscription;
     private Guid _currentUserId;
     private string? _loadErrorMessage;
     private bool _isAdministrator;
@@ -215,6 +218,8 @@
             .WithAutomaticReconnect()
             .Build();
         _ticketCreatedSubscription = _ticketHubConnection.On<Guid>(TicketRealtimeEvents.Created, HandleTicketCreatedAsync);
+        _ticketUpdatedSubscription = _ticketHubConnection.On<Guid>(TicketRealtimeEvents.Updated, HandleTicketUpdatedAsync);
+        _ticketDeletedSubscription = _ticketHubConnection.On<Guid>(TicketRealtimeEvents.Deleted, HandleTicketDeletedAsync);
         _ticketHubConnection.Reconnected += HandleTicketHubReconnectedAsync;
 
         for (var attempt = 1; attempt <= 3; attempt++)
@@ -239,11 +244,31 @@
 
     private async Task HandleTicketCreatedAsync(Guid ticketId)
     {
+        await ReloadTicketAsync(ticketId, false, "A new ticket could not be loaded.");
+    }
+
+    private async Task HandleTicketUpdatedAsync(Guid ticketId)
+    {
+        await ReloadTicketAsync(ticketId, true, "An updated ticket could not be loaded.");
+    }
+
+    private async Task HandleTicketDeletedAsync(Guid ticketId)
+    {
+        await InvokeAsync(() => RemoveTicket(ticketId));
+    }
+
+    private async Task ReloadTicketAsync(Guid ticketId, bool removeWhenNotFound, string errorMessage)
+    {
         try
         {
             using var response = await ApiClient.GetAsync($"api/tickets/{ticketId}");
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
+                if (removeWhenNotFound)
+                {
+                    await InvokeAsync(() => RemoveTicket(ticketId));
+                }
+
                 return;
             }
 
@@ -255,6 +280,7 @@
             {
                 if (_isLoading)
                 {
+                    _ticketIdsRemovedDuringLoad.Remove(ticket.Id);
                     _ticketsReceivedDuringLoad[ticket.Id] = ticket;
                 }
 
@@ -264,7 +290,7 @@
         }
         catch (Exception exception) when (exception is HttpRequestException or JsonException or TaskCanceledException)
         {
-            await InvokeAsync(() => Snackbar.Add("A new ticket could not be loaded.", Severity.Warning));
+            await InvokeAsync(() => Snackbar.Add(errorMessage, Severity.Warning));
         }
     }
 
@@ -298,7 +324,9 @@
                 UpsertTicket(ticket);
             }
 
+            _tickets.RemoveAll(ticket => _ticketIdsRemovedDuringLoad.Contains(ticket.Id));
             _ticketsReceivedDuringLoad.Clear();
+            _ticketIdsRemovedDuringLoad.Clear();
         }
         catch (HttpRequestException)
         {
@@ -462,6 +490,18 @@
         _tickets[ticketIndex] = ticket;
     }
 
+    private void RemoveTicket(Guid ticketId)
+    {
+        if (_isLoading)
+        {
+            _ticketsReceivedDuringLoad.Remove(ticketId);
+            _ticketIdsRemovedDuringLoad.Add(ticketId);
+        }
+
+        _tickets.RemoveAll(ticket => ticket.Id == ticketId);
+        RefreshBoard();
+    }
+
     private string GetTicketCountText(short statusId)
     {
         var ticketCount = _visibleTickets.Count(ticket => ticket.StatusId == statusId);
@@ -471,6 +511,8 @@
     public async ValueTask DisposeAsync()
     {
         _ticketCreatedSubscription?.Dispose();
+        _ticketUpdatedSubscription?.Dispose();
+        _ticketDeletedSubscription?.Dispose();
         if (_ticketHubConnection is not null)
         {
             _ticketHubConnection.Reconnected -= HandleTicketHubReconnectedAsync;

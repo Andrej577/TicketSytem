@@ -1,0 +1,255 @@
+@using System.Globalization
+@using System.Net
+@using System.Text.Json
+@inject IDialogService DialogService
+@inject TicketSystemApiClient ApiClient
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+                    @_errorMessage
+                </MudAlert>
+            }
+
+            <MudForm @ref="_form">
+                <MudStack Spacing="3">
+                    <MudTextField T="string"
+                                  Label="Title"
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="_title"
+                                  Required="true"
+                                  RequiredError="Title is required."
+                                  MaxLength="200"
+                                  Disabled="_isSaving" />
+
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6">
+                            <MudSelect T="Guid?"
+                                       Label="Category"
+                                       Variant="Variant.Outlined"
+                                       @bind-Value="_categoryId"
+                                       Clearable="true"
+                                       HelperText="@(_categories.Count == 0 ? "No categories configured." : null)"
+                                       Disabled="@(_isSaving || _categories.Count == 0)">
+                                @foreach (var category in _categories)
+                                {
+                                    <MudSelectItem T="Guid?" Value="@((Guid?)category.Id)">@category.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudSelect T="short"
+                                       Label="Status"
+                                       Variant="Variant.Outlined"
+                                       @bind-Value="_statusId"
+                                       Required="true"
+                                       Disabled="_isSaving">
+                                @foreach (var status in _statuses)
+                                {
+                                    <MudSelectItem T="short" Value="@status.Id">@status.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudTextField T="string"
+                                  Label="Content"
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="_content"
+                                  Required="true"
+                                  RequiredError="Content is required."
+                                  Lines="14"
+                                  Disabled="_isSaving" />
+                </MudStack>
+            </MudForm>
+
+            @if (_article is not null)
+            {
+                <MudDivider />
+                <MudGrid Spacing="2">
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Author</MudText>
+                        <MudText Typo="Typo.body2">@_article.AuthorEmail</MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Created</MudText>
+                        <MudText Typo="Typo.body2">@_article.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Updated</MudText>
+                        <MudText Typo="Typo.body2">@_article.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                    </MudItem>
+                    @if (_article.PublishedAt is not null)
+                    {
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Published</MudText>
+                            <MudText Typo="Typo.body2">@_article.PublishedAt.Value.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                        </MudItem>
+                    }
+                </MudGrid>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        @if (_article is not null && _canDelete)
+        {
+            <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Outlined.Delete" OnClick="DeleteAsync" Disabled="_isSaving">
+                Delete
+            </MudButton>
+        }
+        <MudSpacer />
+        <MudButton Variant="Variant.Text" OnClick="Cancel" Disabled="_isSaving">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Save" OnClick="SaveAsync" Disabled="_isSaving">
+            @(_article is null ? "Create article" : "Save changes")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance _dialogInstance { get; set; } = null!;
+
+    [Parameter]
+    public KnowledgePOCO? _article { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<KnowledgeStatusDTO> _statuses { get; set; } = [];
+
+    [Parameter]
+    public IReadOnlyList<KnowledgeCategoryDTO> _categories { get; set; } = [];
+
+    [Parameter]
+    public bool _canDelete { get; set; }
+
+    private MudForm? _form;
+    private Guid? _categoryId;
+    private short _statusId;
+    private string _content = string.Empty;
+    private string _title = string.Empty;
+    private string? _errorMessage;
+    private bool _isSaving;
+
+    protected override void OnInitialized()
+    {
+        _title = _article?.Title ?? string.Empty;
+        _content = _article?.Content ?? string.Empty;
+        _categoryId = _article?.CategoryId;
+        _statusId = _article?.StatusId ?? (short)KnowledgeStatusType.Draft;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_isSaving)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = null;
+
+        try
+        {
+            await _form!.ValidateAsync();
+            if (!_form.IsValid)
+            {
+                return;
+            }
+
+            using var response = _article is null
+                ? await ApiClient.PostAsJsonAsync("api/knowledge", new { Title = _title.Trim(), Content = _content.Trim(), CategoryId = _categoryId, StatusId = _statusId })
+                : await ApiClient.PutAsJsonAsync($"api/knowledge/{_article.Id}", new { Title = _title.Trim(), Content = _content.Trim(), CategoryId = _categoryId, StatusId = _statusId });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _errorMessage = GetSaveErrorMessage(response.StatusCode);
+                return;
+            }
+
+            var article = await response.Content.ReadFromJsonAsync<KnowledgePOCO>()
+                ?? throw new JsonException("The API returned an empty knowledge article response.");
+            Snackbar.Add(_article is null ? "Knowledge article created." : "Knowledge article updated.", Severity.Success);
+            _dialogInstance.Close(DialogResult.Ok(article));
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage = "The API is currently unavailable. Please try again later.";
+        }
+        catch (JsonException)
+        {
+            _errorMessage = "The API returned an invalid knowledge article response.";
+        }
+        catch (TaskCanceledException)
+        {
+            _errorMessage = "The knowledge article request timed out.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_isSaving)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        _errorMessage = null;
+
+        try
+        {
+            var confirmed = await DialogService.ShowMessageBoxAsync("Delete knowledge article", "This action permanently deletes the article.", yesText: "Delete", cancelText: "Cancel");
+            if (confirmed != true)
+            {
+                return;
+            }
+
+            using var response = await ApiClient.DeleteAsync($"api/knowledge/{_article!.Id}");
+            if (!response.IsSuccessStatusCode)
+            {
+                _errorMessage = response.StatusCode == HttpStatusCode.NotFound
+                    ? "The knowledge article no longer exists."
+                    : "The knowledge article could not be deleted.";
+                return;
+            }
+
+            Snackbar.Add("Knowledge article deleted.", Severity.Success);
+            _dialogInstance.Close(DialogResult.Ok(_article.Id));
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage = "The API is currently unavailable. Please try again later.";
+        }
+        catch (TaskCanceledException)
+        {
+            _errorMessage = "The delete request timed out.";
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private string GetSaveErrorMessage(HttpStatusCode statusCode)
+    {
+        return statusCode switch
+        {
+            HttpStatusCode.Conflict => "The selected category or status is no longer available.",
+            HttpStatusCode.NotFound when _article is not null => "The knowledge article no longer exists.",
+            _ when _article is not null => "The knowledge article could not be updated.",
+            _ => "The knowledge article could not be created."
+        };
+    }
+
+    private void Cancel()
+    {
+        _dialogInstance.Cancel();
+    }
+}

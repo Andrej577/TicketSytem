@@ -25,4 +25,28 @@ public sealed class TicketRealtimeNotifier
             logger.LogWarning(exception, "Created ticket {TicketId} could not be published through SignalR.", ticketId);
         }
     }
+
+    public async Task NotifyUpdatedTicketAsync(Guid ticketId)
+    {
+        try
+        {
+            await ticketHub.Clients.All.SendAsync(TicketRealtimeEvents.Updated, ticketId);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Updated ticket {TicketId} could not be published through SignalR.", ticketId);
+        }
+    }
+
+    public async Task NotifyDeletedTicketAsync(Guid ticketId)
+    {
+        try
+        {
+            await ticketHub.Clients.All.SendAsync(TicketRealtimeEvents.Deleted, ticketId);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Deleted ticket {TicketId} could not be published through SignalR.", ticketId);
+        }
+    }
 }

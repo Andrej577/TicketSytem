@@ -74,7 +74,7 @@ public static class TicketEndpoints
         }
     }
 
-    private static async Task<IResult> UpdateTicket(Guid id, UpdateTicketRequest request, ClaimsPrincipal user, TicketDAL ticketDAL, CancellationToken cancellationToken)
+    private static async Task<IResult> UpdateTicket(Guid id, UpdateTicketRequest request, ClaimsPrincipal user, TicketDAL ticketDAL, TicketRealtimeNotifier ticketRealtimeNotifier, CancellationToken cancellationToken)
     {
         try
         {
@@ -82,7 +82,13 @@ public static class TicketEndpoints
             var wasUpdated = user.IsInRole(nameof(AppUserType.Administrator))
                 ? await ticketDAL.UpdateAsync(id, request.CustomerId, request.OperatorId, request.Title, request.Content, request.StatusId, request.PriorityId, request.ClosedAt, currentUserId, cancellationToken)
                 : await ticketDAL.UpdateAssignedAsync(id, currentUserId, request.Title, request.Content, request.StatusId, request.PriorityId, request.ClosedAt, cancellationToken);
-            return wasUpdated ? Results.Ok(true) : Results.NotFound();
+            if (!wasUpdated)
+            {
+                return Results.NotFound();
+            }
+
+            await ticketRealtimeNotifier.NotifyUpdatedTicketAsync(id);
+            return Results.Ok(true);
         }
         catch (PostgresException exception) when (exception.SqlState == PostgresErrorCodes.ForeignKeyViolation)
         {
@@ -90,10 +96,16 @@ public static class TicketEndpoints
         }
     }
 
-    private static async Task<IResult> DeleteTicket(Guid id, ClaimsPrincipal user, TicketDAL ticketDAL, CancellationToken cancellationToken)
+    private static async Task<IResult> DeleteTicket(Guid id, ClaimsPrincipal user, TicketDAL ticketDAL, TicketRealtimeNotifier ticketRealtimeNotifier, CancellationToken cancellationToken)
     {
         var deletedRows = await ticketDAL.DeleteAsync(id, GetCurrentUserId(user), cancellationToken);
-        return deletedRows == 0 ? Results.NotFound() : Results.NoContent();
+        if (deletedRows == 0)
+        {
+            return Results.NotFound();
+        }
+
+        await ticketRealtimeNotifier.NotifyDeletedTicketAsync(id);
+        return Results.NoContent();
     }
 
     private static Guid GetCurrentUserId(ClaimsPrincipal user)

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.DataProtection;
 using MudBlazor.Services;
 using TicketSystem.Web.Authentication;
 using TicketSystem.Web.Components;
+using TicketSystem.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
+builder.Services.AddScoped<ThemeState>();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
