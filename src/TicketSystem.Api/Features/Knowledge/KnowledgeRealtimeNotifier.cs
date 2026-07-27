@@ -1,28 +1,19 @@
-using Microsoft.AspNetCore.SignalR;
+using TicketSystem.Api.Realtime;
 using TicketSystem.Shared.Realtime;
 
 namespace TicketSystem.Api.Features.Knowledge;
 
 public sealed class KnowledgeRealtimeNotifier
 {
-    private readonly IHubContext<KnowledgeHub> knowledgeHub;
-    private readonly ILogger<KnowledgeRealtimeNotifier> logger;
+    private readonly RealtimeNotificationClient realtimeNotificationClient;
 
-    public KnowledgeRealtimeNotifier(IHubContext<KnowledgeHub> knowledgeHub, ILogger<KnowledgeRealtimeNotifier> logger)
+    public KnowledgeRealtimeNotifier(RealtimeNotificationClient realtimeNotificationClient)
     {
-        this.knowledgeHub = knowledgeHub;
-        this.logger = logger;
+        this.realtimeNotificationClient = realtimeNotificationClient;
     }
 
-    public async Task NotifyChangedAsync()
+    public Task NotifyChangedAsync()
     {
-        try
-        {
-            await knowledgeHub.Clients.All.SendAsync(KnowledgeRealtimeEvents.Changed);
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Changed knowledge articles could not be published through SignalR.");
-        }
+        return realtimeNotificationClient.NotifyAsync(new RealtimeEventRequest(KnowledgeRealtimeEvents.Changed));
     }
 }

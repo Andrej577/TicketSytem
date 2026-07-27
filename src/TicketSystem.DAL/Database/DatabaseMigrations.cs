@@ -2,7 +2,7 @@ namespace TicketSystem.DAL.Database;
 
 public static class DatabaseMigrations
 {
-    public static int DatabaseVersion { get; } = 5;
+    public static int DatabaseVersion { get; } = 6;
 
     public static IReadOnlyList<DatabaseMigration> All { get; } =
     [
@@ -10,7 +10,8 @@ public static class DatabaseMigrations
         new(2, UpgradeTo2()),
         new(3, UpgradeTo3()),
         new(4, UpgradeTo4()),
-        new(5, UpgradeTo5())
+        new(5, UpgradeTo5()),
+        new(6, UpgradeTo6())
     ];
 
     private static string UpgradeTo1()
@@ -339,6 +340,69 @@ public static class DatabaseMigrations
                 ('Ticket management'),
                 ('Troubleshooting')
             ON CONFLICT ("Name") DO NOTHING;
+            """;
+    }
+
+    private static string UpgradeTo6()
+    {
+        return """
+            ALTER TABLE "AppUser"
+            ADD COLUMN "FirstName" varchar(100);
+
+            ALTER TABLE "AppUser"
+            ADD COLUMN "LastName" varchar(100);
+
+            UPDATE "AppUser"
+            SET
+                "FirstName" = CASE "Email"
+                    WHEN 'admin@ticketsystem.local' THEN 'Admin'
+                    WHEN 'customer1@ticketsystem.local' THEN 'Customer'
+                    WHEN 'customer2@ticketsystem.local' THEN 'Customer'
+                    WHEN 'support1@ticketsystem.local' THEN 'Support'
+                    WHEN 'support2@ticketsystem.local' THEN 'Support'
+                    ELSE split_part("Email", '@', 1)
+                END,
+                "LastName" = CASE "Email"
+                    WHEN 'admin@ticketsystem.local' THEN 'User'
+                    WHEN 'customer1@ticketsystem.local' THEN 'One'
+                    WHEN 'customer2@ticketsystem.local' THEN 'Two'
+                    WHEN 'support1@ticketsystem.local' THEN 'One'
+                    WHEN 'support2@ticketsystem.local' THEN 'Two'
+                    ELSE 'User'
+                END;
+
+            ALTER TABLE "AppUser"
+            ALTER COLUMN "FirstName" SET NOT NULL;
+
+            ALTER TABLE "AppUser"
+            ALTER COLUMN "LastName" SET NOT NULL;
+
+            CREATE TABLE "MediaFile" (
+                "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+                "ChatSessionId" uuid NOT NULL,
+                "UploadedByUserId" uuid NOT NULL,
+                "Name" varchar(255) NOT NULL,
+                "Extension" varchar(10) NOT NULL,
+                "ContentType" varchar(100) NOT NULL,
+                "SizeBytes" bigint NOT NULL,
+                "Content" bytea NOT NULL,
+                "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+                CONSTRAINT "PK_MediaFile" PRIMARY KEY ("Id"),
+                CONSTRAINT "CK_MediaFileSize" CHECK ("SizeBytes" >= 0 AND "SizeBytes" <= 10485760),
+                CONSTRAINT "CK_MediaFileContentSize" CHECK (octet_length("Content") = "SizeBytes")
+            );
+
+            ALTER TABLE "MediaFile"
+            ADD CONSTRAINT "FK_MediaFileChatSessionIdChatSession"
+            FOREIGN KEY ("ChatSessionId") REFERENCES "ChatSession" ("Id") ON DELETE CASCADE;
+
+            ALTER TABLE "MediaFile"
+            ADD CONSTRAINT "FK_MediaFileUploadedByUserIdAppUser"
+            FOREIGN KEY ("UploadedByUserId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
+
+            CREATE INDEX "IXMediaFileChatSessionIdCreatedAt" ON "MediaFile" ("ChatSessionId", "CreatedAt");
+
+            CREATE INDEX "IXMediaFileUploadedByUserId" ON "MediaFile" ("UploadedByUserId");
             """;
     }
 }

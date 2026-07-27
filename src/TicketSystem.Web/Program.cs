@@ -62,6 +62,7 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapWebAuthenticationEndpoints();
+app.MapWebChatEndpoints();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

@@ -34,6 +34,8 @@ services:
       Jwt__Issuer: ${JWT_ISSUER:-TicketSystem.Api}
       Jwt__Audience: ${JWT_AUDIENCE:-TicketSystem.Web}
       Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in deploy/.env}
+      Realtime__BaseUrl: http://realtime:8080
+      Realtime__InternalKey: ${REALTIME_INTERNAL_KEY:?Set REALTIME_INTERNAL_KEY in deploy/.env}
     depends_on:
       database:
         condition: service_healthy
@@ -52,6 +54,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       Cors__AllowedOrigins__0: ${WEB_ORIGIN:-http://localhost:8180}
+      Jwt__Issuer: ${JWT_ISSUER:-TicketSystem.Api}
+      Jwt__Audience: ${JWT_AUDIENCE:-TicketSystem.Web}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in deploy/.env}
+      InternalRealtime__Key: ${REALTIME_INTERNAL_KEY:?Set REALTIME_INTERNAL_KEY in deploy/.env}
     ports:
       - "${REALTIME_PORT:-8082}:8080"
     networks:
@@ -63,10 +69,14 @@ services:
       context: ..
       dockerfile: deploy/web.Dockerfile
     restart: unless-stopped
+    depends_on:
+      realtime:
+        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       Api__BaseUrl: http://api:8080
+      Realtime__BaseUrl: http://realtime:8080
       Authentication__EnableQuickLogin: ${ENABLE_QUICK_LOGIN:-false}
       DataProtection__KeysPath: /var/ticketsystem/data-protection
     volumes:

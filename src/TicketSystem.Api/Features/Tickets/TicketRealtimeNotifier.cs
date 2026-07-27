@@ -1,52 +1,29 @@
-using Microsoft.AspNetCore.SignalR;
+using TicketSystem.Api.Realtime;
 using TicketSystem.Shared.Realtime;
 
 namespace TicketSystem.Api.Features.Tickets;
 
 public sealed class TicketRealtimeNotifier
 {
-    private readonly IHubContext<TicketHub> ticketHub;
-    private readonly ILogger<TicketRealtimeNotifier> logger;
+    private readonly RealtimeNotificationClient realtimeNotificationClient;
 
-    public TicketRealtimeNotifier(IHubContext<TicketHub> ticketHub, ILogger<TicketRealtimeNotifier> logger)
+    public TicketRealtimeNotifier(RealtimeNotificationClient realtimeNotificationClient)
     {
-        this.ticketHub = ticketHub;
-        this.logger = logger;
+        this.realtimeNotificationClient = realtimeNotificationClient;
     }
 
-    public async Task NotifyCreatedTicketAsync(Guid ticketId)
+    public Task NotifyCreatedTicketAsync(Guid ticketId)
     {
-        try
-        {
-            await ticketHub.Clients.All.SendAsync(TicketRealtimeEvents.Created, ticketId);
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Created ticket {TicketId} could not be published through SignalR.", ticketId);
-        }
+        return realtimeNotificationClient.NotifyAsync(new RealtimeEventRequest(TicketRealtimeEvents.Created, EntityId: ticketId));
     }
 
-    public async Task NotifyUpdatedTicketAsync(Guid ticketId)
+    public Task NotifyUpdatedTicketAsync(Guid ticketId)
     {
-        try
-        {
-            await ticketHub.Clients.All.SendAsync(TicketRealtimeEvents.Updated, ticketId);
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Updated ticket {TicketId} could not be published through SignalR.", ticketId);
-        }
+        return realtimeNotificationClient.NotifyAsync(new RealtimeEventRequest(TicketRealtimeEvents.Updated, EntityId: ticketId));
     }
 
-    public async Task NotifyDeletedTicketAsync(Guid ticketId)
+    public Task NotifyDeletedTicketAsync(Guid ticketId)
     {
-        try
-        {
-            await ticketHub.Clients.All.SendAsync(TicketRealtimeEvents.Deleted, ticketId);
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Deleted ticket {TicketId} could not be published through SignalR.", ticketId);
-        }
+        return realtimeNotificationClient.NotifyAsync(new RealtimeEventRequest(TicketRealtimeEvents.Deleted, EntityId: ticketId));
     }
 }

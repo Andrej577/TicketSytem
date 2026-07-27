@@ -33,6 +33,7 @@ REALTIME_PORT=8082
 JWT_ISSUER=TicketSystem.Api
 JWT_AUDIENCE=TicketSystem.Web
 JWT_SIGNING_KEY=replace-with-a-random-secret-of-at-least-32-characters
+REALTIME_INTERNAL_KEY=replace-with-a-different-random-secret-of-at-least-32-characters
 ENABLE_QUICK_LOGIN=true
 ```
 
@@ -51,9 +52,10 @@ ENABLE_QUICK_LOGIN=true
 | `JWT_ISSUER` | No | `TicketSystem.Api` | `TicketSystem.Api` | JWT issuer used by the API. |
 | `JWT_AUDIENCE` | No | `TicketSystem.Web` | `TicketSystem.Web` | JWT audience validated by the API. |
 | `JWT_SIGNING_KEY` | Yes | A random secret of at least 32 characters | None | Signs API access tokens. Never commit a real value. |
+| `REALTIME_INTERNAL_KEY` | Yes | A different random secret of at least 32 characters | None | Protects notifications sent internally from the API to Realtime. Never commit a real value. |
 | `ENABLE_QUICK_LOGIN` | No | `true` | `false` | Shows temporary test-account login buttons. Set to `false` outside local testing. |
 
-All ASP.NET containers listen on port `8080` internally. The Web container calls the API through `http://api:8080`, and the API connects to PostgreSQL through `database:5432`. Host port settings do not change these internal addresses.
+All ASP.NET containers listen on port `8080` internally. The Web container calls the API through `http://api:8080` and connects to SignalR through `http://realtime:8080`. The API connects to PostgreSQL through `database:5432` and sends protected notifications to Realtime. Host port settings do not change these internal addresses.
 
 The Web authentication cookie lasts eight hours. Its encryption keys are stored in the `web-data-protection` Docker volume, so active cookies remain valid when the standard Web container is recreated. Web hot reload uses a separate `web-watch-data-protection` volume.
 
@@ -85,7 +87,9 @@ The services are named `database`, `api`, `realtime`, and `web`. Default endpoin
 - API: `http://localhost:8081`
 - Realtime service: `http://localhost:8082`
 - Chat SignalR hub: `http://localhost:8082/hubs/chat`
-- Ticket SignalR hub: `http://localhost:8081/hubs/tickets`
+- Ticket SignalR hub: `http://localhost:8082/hubs/tickets`
+- AppUser SignalR hub: `http://localhost:8082/hubs/app-users`
+- Knowledge SignalR hub: `http://localhost:8082/hubs/knowledge`
 - PostgreSQL: `localhost:5432`
 
 The API waits for PostgreSQL to become healthy and then applies pending database migrations automatically. The Dockerfile-specific `.dockerignore` files prevent local Windows `bin` and `obj` output from being copied into Linux image builds.

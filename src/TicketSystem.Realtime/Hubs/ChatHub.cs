@@ -1,28 +1,21 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using TicketSystem.Realtime.Models;
+using TicketSystem.Shared.Enums;
 
 namespace TicketSystem.Realtime.Hubs;
 
+[Authorize]
 public sealed class ChatHub : Hub
 {
-    public Task JoinSession(Guid sessionId)
-    {
-        return Groups.AddToGroupAsync(Context.ConnectionId, GetGroupName(sessionId));
-    }
+    public const string StaffGroup = "chat-staff";
 
-    public Task LeaveSession(Guid sessionId)
+    public override async Task OnConnectedAsync()
     {
-        return Groups.RemoveFromGroupAsync(Context.ConnectionId, GetGroupName(sessionId));
-    }
+        if (Context.User!.IsInRole(nameof(AppUserType.Operator)) || Context.User.IsInRole(nameof(AppUserType.Administrator)))
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, StaffGroup);
+        }
 
-    public Task SendMessage(ChatMessage message)
-    {
-        return Clients.Group(GetGroupName(message.SessionId))
-            .SendAsync("messageReceived", message);
-    }
-
-    private static string GetGroupName(Guid sessionId)
-    {
-        return $"chat-session:{sessionId}";
+        await base.OnConnectedAsync();
     }
 }

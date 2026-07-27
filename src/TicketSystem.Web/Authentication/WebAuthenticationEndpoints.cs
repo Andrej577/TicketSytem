@@ -81,7 +81,9 @@ public static class WebAuthenticationEndpoints
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, loginResponse.UserId.ToString()),
-                new Claim(ClaimTypes.Name, loginResponse.Email),
+                new Claim(ClaimTypes.Name, $"{loginResponse.FirstName} {loginResponse.LastName}"),
+                new Claim(ClaimTypes.GivenName, loginResponse.FirstName),
+                new Claim(ClaimTypes.Surname, loginResponse.LastName),
                 new Claim(ClaimTypes.Email, loginResponse.Email),
                 new Claim(ClaimTypes.Role, role),
                 new Claim(TicketSystemClaimTypes.ApiAccessToken, loginResponse.AccessToken)

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace TicketSystem.Api.Features.Knowledge;
+namespace TicketSystem.Realtime.Hubs;
 
 [Authorize(Roles = "Operator,Administrator")]
 public sealed class KnowledgeHub : Hub

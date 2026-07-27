@@ -50,8 +50,11 @@
                     <PropertyColumn Property="user => user.Email" Title="User / Email">
                         <CellTemplate Context="cell">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                <MudAvatar Color="Color.Primary" Size="Size.Small">@GetEmailInitial(cell.Item.Email)</MudAvatar>
-                                <MudText Typo="Typo.body2">@cell.Item.Email</MudText>
+                                <MudAvatar Color="Color.Primary" Size="Size.Small">@GetUserInitials(cell.Item)</MudAvatar>
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2">@cell.Item.FirstName @cell.Item.LastName</MudText>
+                                    <MudText Typo="Typo.caption">@cell.Item.Email</MudText>
+                                </MudStack>
                             </MudStack>
                         </CellTemplate>
                     </PropertyColumn>
@@ -135,11 +138,11 @@
 
     private async Task ConnectToAppUserHubAsync(string accessToken)
     {
-        var apiBaseUrl = Configuration["Api:BaseUrl"]
-            ?? throw new InvalidOperationException("The 'Api:BaseUrl' configuration value is required.");
+        var realtimeBaseUrl = Configuration["Realtime:BaseUrl"]
+            ?? throw new InvalidOperationException("The 'Realtime:BaseUrl' configuration value is required.");
 
         _appUserHubConnection = new HubConnectionBuilder()
-            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/hubs/app-users", options =>
+            .WithUrl($"{realtimeBaseUrl.TrimEnd('/')}{RealtimeHubRoutes.AppUsers}", options =>
             {
                 options.AccessTokenProvider = () => Task.FromResult<string?>(accessToken);
             })
@@ -287,6 +290,8 @@
 
         var searchText = _searchText.Trim();
         return user.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || user.FirstName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
+            || user.LastName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
             || user.UserTypeName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
             || user.UpdatedByUserEmail.Contains(searchText, StringComparison.OrdinalIgnoreCase);
     }
@@ -297,9 +302,11 @@
         await _usersGrid!.ClearFiltersAsync();
     }
 
-    private static string GetEmailInitial(string email)
+    private static string GetUserInitials(AppUserPOCO user)
     {
-        return email[..1].ToUpperInvariant();
+        var firstInitial = user.FirstName.Length == 0 ? string.Empty : user.FirstName[..1];
+        var lastInitial = user.LastName.Length == 0 ? string.Empty : user.LastName[..1];
+        return $"{firstInitial}{lastInitial}".ToUpperInvariant();
     }
 
     public async ValueTask DisposeAsync()

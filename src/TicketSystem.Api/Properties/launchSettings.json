@@ -6,7 +6,12 @@
       "launchBrowser": false,
       "applicationUrl": "https://localhost:7280;http://localhost:5280",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Jwt__Issuer": "TicketSystem.Api",
+        "Jwt__Audience": "TicketSystem.Web",
+        "Jwt__SigningKey": "TicketSystem-development-signing-key-change-before-production",
+        "Realtime__BaseUrl": "http://localhost:5057",
+        "Realtime__InternalKey": "ticket-system-local-realtime-internal-key-2026"
       }
     }
   }

@@ -24,6 +24,9 @@ public sealed class JwtTokenService
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, appUser.Id.ToString()),
+            new Claim(ClaimTypes.Name, $"{appUser.FirstName} {appUser.LastName}"),
+            new Claim(ClaimTypes.GivenName, appUser.FirstName),
+            new Claim(ClaimTypes.Surname, appUser.LastName),
             new Claim(ClaimTypes.Email, appUser.Email),
             new Claim(ClaimTypes.Role, ((AppUserType)appUser.UserTypeId).ToString())
         };
@@ -38,6 +41,6 @@ public sealed class JwtTokenService
             signingCredentials: signingCredentials);
         var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
 
-        return new LoginResponse(accessToken, expiresAt, appUser.Id, appUser.Email, appUser.UserTypeId);
+        return new LoginResponse(accessToken, expiresAt, appUser.Id, appUser.Email, appUser.FirstName, appUser.LastName, appUser.UserTypeId);
     }
 }

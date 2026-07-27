@@ -210,11 +210,11 @@
 
     private async Task ConnectToKnowledgeHubAsync(string accessToken)
     {
-        var apiBaseUrl = Configuration["Api:BaseUrl"]
-            ?? throw new InvalidOperationException("The 'Api:BaseUrl' configuration value is required.");
+        var realtimeBaseUrl = Configuration["Realtime:BaseUrl"]
+            ?? throw new InvalidOperationException("The 'Realtime:BaseUrl' configuration value is required.");
 
         _knowledgeHubConnection = new HubConnectionBuilder()
-            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/hubs/knowledge", options =>
+            .WithUrl($"{realtimeBaseUrl.TrimEnd('/')}{RealtimeHubRoutes.Knowledge}", options =>
             {
                 options.AccessTokenProvider = () => Task.FromResult<string?>(accessToken);
             })

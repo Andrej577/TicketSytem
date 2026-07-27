@@ -173,6 +173,8 @@
     private IDisposable? _ticketCreatedSubscription;
     private IDisposable? _ticketDeletedSubscription;
     private IDisposable? _ticketUpdatedSubscription;
+    private string _accessToken = string.Empty;
+    private string _currentUserEmail = string.Empty;
     private Guid _currentUserId;
     private string? _loadErrorMessage;
     private bool _isAdministrator;
@@ -194,24 +196,25 @@
 
         var authenticationState = await _authenticationState;
         _currentUserId = Guid.Parse(authenticationState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        _currentUserEmail = authenticationState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)!.Value;
         _isAdministrator = authenticationState.User.IsInRole(nameof(AppUserType.Administrator));
         _isCustomer = authenticationState.User.IsInRole(nameof(AppUserType.Customer));
         _isOperator = authenticationState.User.IsInRole(nameof(AppUserType.Operator));
         _showOnlyMyTickets = _isOperator;
 
-        var accessToken = authenticationState.User.FindFirst(TicketSystemClaimTypes.ApiAccessToken)!.Value;
-        await ConnectToTicketHubAsync(accessToken);
+        _accessToken = authenticationState.User.FindFirst(TicketSystemClaimTypes.ApiAccessToken)!.Value;
+        await ConnectToTicketHubAsync(_accessToken);
         await LoadTicketsAsync();
         StateHasChanged();
     }
 
     private async Task ConnectToTicketHubAsync(string accessToken)
     {
-        var apiBaseUrl = Configuration["Api:BaseUrl"]
-            ?? throw new InvalidOperationException("The 'Api:BaseUrl' configuration value is required.");
+        var realtimeBaseUrl = Configuration["Realtime:BaseUrl"]
+            ?? throw new InvalidOperationException("The 'Realtime:BaseUrl' configuration value is required.");
 
         _ticketHubConnection = new HubConnectionBuilder()
-            .WithUrl($"{apiBaseUrl.TrimEnd('/')}/hubs/tickets", options =>
+            .WithUrl($"{realtimeBaseUrl.TrimEnd('/')}{RealtimeHubRoutes.Tickets}", options =>
             {
                 options.AccessTokenProvider = () => Task.FromResult<string?>(accessToken);
             })
@@ -424,13 +427,17 @@
             [nameof(TicketDialog._ticket)] = ticket,
             [nameof(TicketDialog._isReadOnly)] = !CanEditTicket(ticket),
             [nameof(TicketDialog._canAssign)] = _isAdministrator,
-            [nameof(TicketDialog._canDelete)] = _isAdministrator
+            [nameof(TicketDialog._canDelete)] = _isAdministrator,
+            [nameof(TicketDialog._isOperator)] = _isOperator,
+            [nameof(TicketDialog._currentUserId)] = _currentUserId,
+            [nameof(TicketDialog._currentUserEmail)] = _currentUserEmail,
+            [nameof(TicketDialog._accessToken)] = _accessToken
         };
         var options = new DialogOptions
         {
             CloseButton = true,
             FullWidth = true,
-            MaxWidth = MaxWidth.Medium,
+            MaxWidth = MaxWidth.ExtraLarge,
             BackdropClick = false,
             BackgroundClass = "blur-class"
         };

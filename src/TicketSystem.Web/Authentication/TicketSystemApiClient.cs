@@ -35,6 +35,11 @@ public sealed class TicketSystemApiClient
         return SendAsync(HttpMethod.Post, requestUri, JsonContent.Create(value), cancellationToken);
     }
 
+    public Task<HttpResponseMessage> PostAsync(string requestUri, HttpContent content, CancellationToken cancellationToken = default)
+    {
+        return SendAsync(HttpMethod.Post, requestUri, content, cancellationToken);
+    }
+
     public Task<HttpResponseMessage> PutAsJsonAsync<T>(string requestUri, T value, CancellationToken cancellationToken = default)
     {
         return SendAsync(HttpMethod.Put, requestUri, JsonContent.Create(value), cancellationToken);

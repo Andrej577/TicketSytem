@@ -46,6 +46,8 @@ CREATE TABLE "KnowledgeCategory" (
 CREATE TABLE "AppUser" (
     "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "Email" varchar(320) NOT NULL,
+    "FirstName" varchar(100) NOT NULL,
+    "LastName" varchar(100) NOT NULL,
     "PasswordHash" text NOT NULL,
     "UserTypeId" integer NOT NULL,
     "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
@@ -100,6 +102,21 @@ CREATE TABLE "MessageRead" (
     "UserId" uuid NOT NULL,
     "ReadAt" timestamp with time zone NOT NULL DEFAULT now(),
     CONSTRAINT "PK_MessageRead" PRIMARY KEY ("MessageId", "UserId")
+);
+
+CREATE TABLE "MediaFile" (
+    "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "ChatSessionId" uuid NOT NULL,
+    "UploadedByUserId" uuid NOT NULL,
+    "Name" varchar(255) NOT NULL,
+    "Extension" varchar(10) NOT NULL,
+    "ContentType" varchar(100) NOT NULL,
+    "SizeBytes" bigint NOT NULL,
+    "Content" bytea NOT NULL,
+    "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT "PK_MediaFile" PRIMARY KEY ("Id"),
+    CONSTRAINT "CK_MediaFileSize" CHECK ("SizeBytes" >= 0 AND "SizeBytes" <= 10485760),
+    CONSTRAINT "CK_MediaFileContentSize" CHECK (octet_length("Content") = "SizeBytes")
 );
 
 CREATE TABLE "Knowledge" (
@@ -175,6 +192,14 @@ ALTER TABLE "MessageRead"
 ADD CONSTRAINT "FK_MessageReadUserIdAppUser"
 FOREIGN KEY ("UserId") REFERENCES "AppUser" ("Id") ON DELETE CASCADE;
 
+ALTER TABLE "MediaFile"
+ADD CONSTRAINT "FK_MediaFileChatSessionIdChatSession"
+FOREIGN KEY ("ChatSessionId") REFERENCES "ChatSession" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "MediaFile"
+ADD CONSTRAINT "FK_MediaFileUploadedByUserIdAppUser"
+FOREIGN KEY ("UploadedByUserId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
+
 ALTER TABLE "Knowledge"
 ADD CONSTRAINT "FK_KnowledgeCategoryIdKnowledgeCategory"
 FOREIGN KEY ("CategoryId") REFERENCES "KnowledgeCategory" ("Id") ON DELETE SET NULL;
@@ -217,6 +242,10 @@ CREATE INDEX "IXMessageSenderId" ON "Message" ("SenderId");
 
 CREATE INDEX "IXMessageReadUserId" ON "MessageRead" ("UserId");
 
+CREATE INDEX "IXMediaFileChatSessionIdCreatedAt" ON "MediaFile" ("ChatSessionId", "CreatedAt");
+
+CREATE INDEX "IXMediaFileUploadedByUserId" ON "MediaFile" ("UploadedByUserId");
+
 CREATE INDEX "IXKnowledgeStatusId" ON "Knowledge" ("StatusId");
 
 CREATE INDEX "IXKnowledgeCategoryId" ON "Knowledge" ("CategoryId");
@@ -256,10 +285,12 @@ VALUES
     ('Troubleshooting')
 ON CONFLICT ("Name") DO NOTHING;
 
-INSERT INTO "AppUser" ("Id", "Email", "PasswordHash", "UserTypeId", "CreatedAt", "UpdatedAt", "UpdatedByUserId")
+INSERT INTO "AppUser" ("Id", "Email", "FirstName", "LastName", "PasswordHash", "UserTypeId", "CreatedAt", "UpdatedAt", "UpdatedByUserId")
 VALUES (
     '2d6781ce-863a-4ca4-83c3-c4d521f8e23d',
     'admin@ticketsystem.local',
+    'Admin',
+    'User',
     'pbkdf2-sha256$100000$lgmjqMVW/xj4j8oNTZkmJQ==$FCDoM5xmI0/o5IoxEzoMhClT9sNIazb13MmNk6Ih05s=',
     3,
     now(),
@@ -267,9 +298,9 @@ VALUES (
     '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'
 );
 
-INSERT INTO "AppUser" ("Email", "PasswordHash", "UserTypeId", "UpdatedByUserId")
+INSERT INTO "AppUser" ("Email", "FirstName", "LastName", "PasswordHash", "UserTypeId", "UpdatedByUserId")
 VALUES
-    ('customer1@ticketsystem.local', 'pbkdf2-sha256$100000$YUFcv4vEuLC/oP0DXytOfw==$qdLZall/krl8eqt8YauYy95IKdDayMHQcXCxjGhg3/0=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
-    ('customer2@ticketsystem.local', 'pbkdf2-sha256$100000$YpD12bK6eZYl72w0OcEeXA==$ejIdWPs6McK0WIkuG5PzK9cw+LXvqCJ76F33XKWfiQ4=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
-    ('support1@ticketsystem.local', 'pbkdf2-sha256$100000$bVeYhVewq6bgqstV7VxaYg==$sCeDxZbSVh9lZcMLZZfExy+4VLvAeZi8EekO/mcuWrM=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
-    ('support2@ticketsystem.local', 'pbkdf2-sha256$100000$hGz/qId57Ox8lR2MHCv5Ag==$ca952K+yHQFEDAwalyXwtTmOuuAviwh5y94EPCJLWt4=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d');
+    ('customer1@ticketsystem.local', 'Customer', 'One', 'pbkdf2-sha256$100000$YUFcv4vEuLC/oP0DXytOfw==$qdLZall/krl8eqt8YauYy95IKdDayMHQcXCxjGhg3/0=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
+    ('customer2@ticketsystem.local', 'Customer', 'Two', 'pbkdf2-sha256$100000$YpD12bK6eZYl72w0OcEeXA==$ejIdWPs6McK0WIkuG5PzK9cw+LXvqCJ76F33XKWfiQ4=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
+    ('support1@ticketsystem.local', 'Support', 'One', 'pbkdf2-sha256$100000$bVeYhVewq6bgqstV7VxaYg==$sCeDxZbSVh9lZcMLZZfExy+4VLvAeZi8EekO/mcuWrM=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
+    ('support2@ticketsystem.local', 'Support', 'Two', 'pbkdf2-sha256$100000$hGz/qId57Ox8lR2MHCv5Ag==$ca952K+yHQFEDAwalyXwtTmOuuAviwh5y94EPCJLWt4=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d');

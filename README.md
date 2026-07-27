@@ -11,7 +11,7 @@ This repository contains a ticket system with PostgreSQL persistence, a Blazor W
 - `src/TicketSystem.Shared` - DTOs and enums shared by the API and Web projects.
 - `global.json` - pins the local SDK to .NET 8 for Visual Studio 2022 compatibility.
 - `src/TicketSystem.Web` - Blazor Web App project configured for MudBlazor and server interactivity.
-- `src/TicketSystem.Realtime` - standalone ASP.NET Core SignalR host used for chat communication.
+- `src/TicketSystem.Realtime` - standalone authenticated SignalR host for application notifications.
 - `TicketSystem.slnLaunch` - Visual Studio multi-project launch profile for starting Web and Realtime together.
 - `deploy/README.md` - Docker configuration, standard startup, Web hot reload, and container operations.
 
@@ -24,11 +24,9 @@ Current setup:
 - `TicketSystem.Web` is a Blazor Web App with interactive server components.
 - `TicketSystem.Web` references `MudBlazor` version `9.6.0`.
 - `TicketSystem.Web` runs as the MudBlazor application.
-- `TicketSystem.Realtime` contains the `ChatHub` SignalR hub and the `ChatMessage` message model.
-- `TicketSystem.Realtime` maps the SignalR chat endpoint at `/hubs/chat`.
-- `TicketSystem.Api` maps the authenticated Ticket notification hub at `/hubs/tickets`.
-- SignalR groups are named with the `chat-session:{sessionId}` pattern, matching the database `ChatSession` concept.
-- After a Ticket is created, the API broadcasts its ID and connected Ticket pages fetch it through the authorized API before adding it to the Kanban board.
+- `TicketSystem.Realtime` owns the authenticated AppUser, Chat, Knowledge, and Ticket SignalR hubs.
+- `TicketSystem.Api` persists changes and publishes ID-only notifications to Realtime through a protected internal endpoint.
+- Connected Web pages receive the notification and fetch authorized data through the API.
 
 ## Visual Studio Launch
 
@@ -41,7 +39,9 @@ The SignalR hub URLs are:
 
 ```text
 https://localhost:7197/hubs/chat
-https://localhost:7280/hubs/tickets
+https://localhost:7197/hubs/tickets
+https://localhost:7197/hubs/app-users
+https://localhost:7197/hubs/knowledge
 ```
 
 ## Docker

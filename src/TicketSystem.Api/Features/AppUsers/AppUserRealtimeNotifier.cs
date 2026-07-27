@@ -1,28 +1,19 @@
-using Microsoft.AspNetCore.SignalR;
+using TicketSystem.Api.Realtime;
 using TicketSystem.Shared.Realtime;
 
 namespace TicketSystem.Api.Features.AppUsers;
 
 public sealed class AppUserRealtimeNotifier
 {
-    private readonly IHubContext<AppUserHub> appUserHub;
-    private readonly ILogger<AppUserRealtimeNotifier> logger;
+    private readonly RealtimeNotificationClient realtimeNotificationClient;
 
-    public AppUserRealtimeNotifier(IHubContext<AppUserHub> appUserHub, ILogger<AppUserRealtimeNotifier> logger)
+    public AppUserRealtimeNotifier(RealtimeNotificationClient realtimeNotificationClient)
     {
-        this.appUserHub = appUserHub;
-        this.logger = logger;
+        this.realtimeNotificationClient = realtimeNotificationClient;
     }
 
-    public async Task NotifyChangedAsync()
+    public Task NotifyChangedAsync()
     {
-        try
-        {
-            await appUserHub.Clients.All.SendAsync(AppUserRealtimeEvents.Changed);
-        }
-        catch (Exception exception)
-        {
-            logger.LogWarning(exception, "Changed app users could not be published through SignalR.");
-        }
+        return realtimeNotificationClient.NotifyAsync(new RealtimeEventRequest(AppUserRealtimeEvents.Changed));
     }
 }

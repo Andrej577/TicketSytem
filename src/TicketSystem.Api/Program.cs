@@ -1,10 +1,13 @@
 using Npgsql;
 using TicketSystem.Api.Features.Authentication;
 using TicketSystem.Api.Features.AppUsers;
+using TicketSystem.Api.Features.Chat;
 using TicketSystem.Api.Features.Knowledge;
 using TicketSystem.Api.Features.Tickets;
 using TicketSystem.Api.Features.UpdateDatabase;
+using TicketSystem.Api.Realtime;
 using TicketSystem.DAL.AppUsers;
+using TicketSystem.DAL.Chat;
 using TicketSystem.DAL.Configuration;
 using TicketSystem.DAL.Knowledge;
 using TicketSystem.DAL.Tickets;
@@ -16,7 +19,7 @@ DapperConfiguration.Configure();
 builder.Services.AddControllers();
 builder.Services.AddApiAuthentication(builder.Configuration);
 builder.Services.AddDatabaseUpdater();
-builder.Services.AddSignalR();
+builder.Services.AddHttpClient<RealtimeNotificationClient>(client => client.Timeout = TimeSpan.FromSeconds(2));
 builder.Services.AddSingleton(serviceProvider =>
 {
     var configuration = serviceProvider.GetRequiredService<IConfiguration>();
@@ -28,6 +31,8 @@ builder.Services.AddSingleton(serviceProvider =>
 });
 builder.Services.AddScoped<AppUserDAL>();
 builder.Services.AddScoped<AppUserRealtimeNotifier>();
+builder.Services.AddScoped<ChatDAL>();
+builder.Services.AddScoped<ChatRealtimeNotifier>();
 builder.Services.AddScoped<KnowledgeDAL>();
 builder.Services.AddScoped<KnowledgeRealtimeNotifier>();
 builder.Services.AddScoped<TicketDAL>();
@@ -48,10 +53,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapAuthenticationEndpoints();
 app.MapAppUserEndpoints();
+app.MapChatEndpoints();
 app.MapKnowledgeEndpoints();
 app.MapTicketEndpoints();
-app.MapHub<AppUserHub>("/hubs/app-users");
-app.MapHub<KnowledgeHub>("/hubs/knowledge");
-app.MapHub<TicketHub>("/hubs/tickets");
 
 app.Run();

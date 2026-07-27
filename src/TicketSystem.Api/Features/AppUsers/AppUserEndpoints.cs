@@ -46,7 +46,7 @@ public static class AppUserEndpoints
         try
         {
             var passwordHash = PasswordHasher.Hash(request.Password);
-            var appUser = await appUserDAL.CreateAsync(request.Email!, passwordHash, request.UserTypeId, GetCurrentUserId(user), cancellationToken);
+            var appUser = await appUserDAL.CreateAsync(request.Email!, request.FirstName, request.LastName, passwordHash, request.UserTypeId, GetCurrentUserId(user), cancellationToken);
             await appUserRealtimeNotifier.NotifyChangedAsync();
             return Results.Created($"/api/app-users/{appUser.Id}", appUser);
         }
@@ -61,7 +61,7 @@ public static class AppUserEndpoints
         try
         {
             var passwordHash = request.Password is null ? null : PasswordHasher.Hash(request.Password);
-            var appUser = await appUserDAL.UpdateAsync(id, request.Email!, passwordHash, GetCurrentUserId(user), cancellationToken);
+            var appUser = await appUserDAL.UpdateAsync(id, request.Email!, request.FirstName, request.LastName, passwordHash, GetCurrentUserId(user), cancellationToken);
             if (appUser is null)
             {
                 return Results.NotFound();

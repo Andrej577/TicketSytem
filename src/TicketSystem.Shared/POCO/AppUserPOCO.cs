@@ -13,6 +13,8 @@ public sealed class AppUserPOCO : AppUserDTO
     {
         Id = appUser.Id;
         Email = appUser.Email;
+        FirstName = appUser.FirstName;
+        LastName = appUser.LastName;
         UserTypeId = appUser.UserTypeId;
         CreatedAt = appUser.CreatedAt;
         UpdatedAt = appUser.UpdatedAt;

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace TicketSystem.Api.Features.Tickets;
+namespace TicketSystem.Realtime.Hubs;
 
 [Authorize]
 public sealed class TicketHub : Hub

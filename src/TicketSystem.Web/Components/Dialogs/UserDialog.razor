@@ -29,6 +29,24 @@
             <MudForm @ref="_form">
                 <MudStack Spacing="2">
                     <MudTextField T="string"
+                                  Label="First name"
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="_firstName"
+                                  Required="true"
+                                  RequiredError="First name is required."
+                                  Immediate="true"
+                                  Disabled="_isSubmitting" />
+
+                    <MudTextField T="string"
+                                  Label="Last name"
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="_lastName"
+                                  Required="true"
+                                  RequiredError="Last name is required."
+                                  Immediate="true"
+                                  Disabled="_isSubmitting" />
+
+                    <MudTextField T="string"
                                   Label="Email address"
                                   Placeholder="user@example.com"
                                   Variant="Variant.Outlined"
@@ -87,17 +105,21 @@
 
     private readonly UserFormModel _model = new();
     private MudForm? _form;
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
     private bool _isSubmitting;
     private string? _errorMessage;
 
     private bool _isEditMode => User is not null;
 
     private string _dialogDescription => _isEditMode
-        ? "Update the user's email address or enter a new password."
-        : "Enter the credentials the user will use to access the portal.";
+        ? "Update the user's details or enter a new password."
+        : "Enter the user's details and login credentials.";
 
     protected override void OnInitialized()
     {
+        _firstName = User?.FirstName ?? string.Empty;
+        _lastName = User?.LastName ?? string.Empty;
         _model.Email = User?.Email ?? string.Empty;
     }
 
@@ -163,6 +185,8 @@
         return ApiClient.PostAsJsonAsync("api/app-users", new
         {
             Email = _model.Email.Trim(),
+            FirstName = _firstName.Trim(),
+            LastName = _lastName.Trim(),
             _model.Password,
             UserTypeId = (int)AppUserType.Customer
         });
@@ -173,6 +197,8 @@
         return ApiClient.PutAsJsonAsync($"api/app-users/{User!.Id}", new
         {
             Email = _model.Email.Trim(),
+            FirstName = _firstName.Trim(),
+            LastName = _lastName.Trim(),
             Password = string.IsNullOrWhiteSpace(_model.Password) ? null : _model.Password
         });
     }
