@@ -1,4 +1,3 @@
-1. Button na editu customera piše create
 2. SignalR za dashboard
 3. Redizajn dashboard (date picker)
 4. Events on Recent activity na dashboard
