@@ -23,4 +23,5 @@
 23. Napraviti request i response objekte koje cemo slati i primati s APIja, ovako imamo prevelike argumente u funkcijama koji se odnose na isti objekt
 24. Provjeriti šta znače oni SignalR eventi, koliko ja znam oni nebi trebali niti postojati (nisam siguran)
 25. Priprema za deploy (micanje tesnih usera s logina?)
-26. Tu imamo ludorije s dockerima i treba napraviti jedan dobar za deploy
+26. Maknuti layout inspo iz readme.md-a i mozda jos nabrijat tehničkim stvarima
+27. Tu imamo ludorije s dockerima i treba napraviti jedan dobar za deploy
