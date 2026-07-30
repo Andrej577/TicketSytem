@@ -10,203 +10,199 @@
 
 <MudDialog>
     <DialogContent>
-        <MudGrid Spacing="3">
-            <MudItem xs="6">
-                <MudStack Spacing="3">
-                    <MudTextField T="string" Label="Title" @bind-Value="_editedTicket.Title" ReadOnly="_isReadOnly" Variant="Variant.Outlined" />
+        <MudTabs KeepPanelsAlive="true" Rounded="true" ApplyEffectsToContainer="true">
+            <MudTabPanel Text="Details" Icon="@Icons.Material.Outlined.Info">
+                <div class="ticket-details-tab">
+                    <MudStack Spacing="3">
+                        <MudTextField T="string" Label="Title" @bind-Value="_editedTicket.Title" ReadOnly="_isReadOnly" Variant="Variant.Outlined" />
 
-                    <MudGrid Spacing="2">
-                        <MudItem xs="6">
-                            <MudTextField T="string" Label="Sender email" Value="@_editedTicket.CustomerEmail" ReadOnly="true" Variant="Variant.Outlined" />
-                        </MudItem>
-                        <MudItem xs="6">
-                            @if (_canAssign)
+                        <MudGrid Spacing="2">
+                            <MudItem xs="6">
+                                <MudTextField T="string" Label="Sender email" Value="@_editedTicket.CustomerEmail" ReadOnly="true" Variant="Variant.Outlined" />
+                            </MudItem>
+                            <MudItem xs="6">
+                                @if (_canAssign)
+                                {
+                                    <MudSelect T="Guid?" Label="Assigned to" @bind-Value="_editedTicket.OperatorId" Variant="Variant.Outlined" Disabled="_isLoadingOperators">
+                                        <MudSelectItem T="Guid?" Value="@((Guid?)null)">Unassigned</MudSelectItem>
+                                        @foreach (var appOperator in _operators)
+                                        {
+                                            <MudSelectItem T="Guid?" Value="@((Guid?)appOperator.Id)">@appOperator.Email</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                }
+                                else
+                                {
+                                    <MudTextField T="string" Label="Assigned to" Value="@(_editedTicket.OperatorEmail ?? "Unassigned")" ReadOnly="true" Variant="Variant.Outlined" />
+                                }
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.body2">Priority</MudText>
+                                    <MudToggleGroup T="short" @bind-Value="_editedTicket.PriorityId" Vertical="false" Color="@GetPriorityColor()" Disabled="@(_isReadOnly || _isLoadingPriorities || _priorities.Count == 0)" Class="mud-width-full">
+                                        @foreach (var priority in _priorities)
+                                        {
+                                            <MudToggleItem T="short" Value="@priority.Id" Text="@priority.DisplayName" />
+                                        }
+                                    </MudToggleGroup>
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.body2">Status</MudText>
+                                    <MudToggleGroup T="short" @bind-Value="_editedTicket.StatusId" Vertical="false" Color="@GetStatusColor()" Disabled="_isReadOnly" Class="mud-width-full">
+                                        @foreach (var status in TicketStatusOptions.All)
+                                        {
+                                            <MudToggleItem T="short" Value="@status.Id" Text="@status.Name" />
+                                        }
+                                    </MudToggleGroup>
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+
+                        @if (_isLoadingPriorities || _isLoadingOperators)
+                        {
+                            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                        }
+
+                        <MudTextField T="string" Label="Content" @bind-Value="_editedTicket.Content" ReadOnly="_isReadOnly" Lines="6" Variant="Variant.Outlined" />
+
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption">Created @_editedTicket.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                            <MudText Typo="Typo.caption">Updated @_editedTicket.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                        </MudStack>
+                    </MudStack>
+                </div>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Conversation" Icon="@Icons.Material.Outlined.Chat">
+                <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="UploadFileAsync" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isUploadingFile)" DragAndDrop="true" @bind-Dragging="_isDraggingFile" Class="ticket-chat-drop-upload">
+                    <CustomContent Context="dropUpload">
+                        <div class="@($"ticket-chat-tab{(_isDraggingFile ? " ticket-chat-drop-active" : string.Empty)}")" @ondragenter="StartFileDragging">
+                            @if (_isLoadingMessages)
                             {
-                                <MudSelect T="Guid?" Label="Assigned to" @bind-Value="_editedTicket.OperatorId" Variant="Variant.Outlined" Disabled="_isLoadingOperators">
-                                    <MudSelectItem T="Guid?" Value="@((Guid?)null)">Unassigned</MudSelectItem>
-                                    @foreach (var appOperator in _operators)
-                                    {
-                                        <MudSelectItem T="Guid?" Value="@((Guid?)appOperator.Id)">@appOperator.Email</MudSelectItem>
-                                    }
-                                </MudSelect>
+                                <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="ticket-chat-scroll">
+                                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                                </MudStack>
                             }
                             else
                             {
-                                <MudTextField T="string" Label="Assigned to" Value="@(_editedTicket.OperatorEmail ?? "Unassigned")" ReadOnly="true" Variant="Variant.Outlined" />
-                            }
-                        </MudItem>
-                        <MudItem xs="12">
-                            <MudStack Spacing="1">
-                                <MudText Typo="Typo.body2">Priority</MudText>
-                                <MudToggleGroup T="short" @bind-Value="_editedTicket.PriorityId" Vertical="false" Color="@GetPriorityColor()" Disabled="@(_isReadOnly || _isLoadingPriorities || _priorities.Count == 0)" Class="mud-width-full">
-                                    @foreach (var priority in _priorities)
+                                <div class="ticket-chat-scroll">
+                                    @if (_messages.Count == 0)
                                     {
-                                        <MudToggleItem T="short" Value="@priority.Id" Text="@priority.DisplayName" />
+                                        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mud-height-full">
+                                            <MudIcon Icon="@Icons.Material.Outlined.Forum" Color="Color.Secondary" Size="Size.Large" />
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">No messages yet</MudText>
+                                        </MudStack>
                                     }
-                                </MudToggleGroup>
-                            </MudStack>
-                        </MudItem>
-                        <MudItem xs="12">
-                            <MudStack Spacing="1">
-                                <MudText Typo="Typo.body2">Status</MudText>
-                                <MudToggleGroup T="short" @bind-Value="_editedTicket.StatusId" Vertical="false" Color="@GetStatusColor()" Disabled="_isReadOnly" Class="mud-width-full">
-                                    @foreach (var status in TicketStatusOptions.All)
+                                    else
                                     {
-                                        <MudToggleItem T="short" Value="@status.Id" Text="@status.Name" />
-                                    }
-                                </MudToggleGroup>
-                            </MudStack>
-                        </MudItem>
-                    </MudGrid>
-
-                    @if (_isLoadingPriorities || _isLoadingOperators)
-                    {
-                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                    }
-
-                    <MudTextField T="string" Label="Content" @bind-Value="_editedTicket.Content" ReadOnly="_isReadOnly" Lines="6" Variant="Variant.Outlined" />
-
-                    <MudStack Spacing="0">
-                        <MudText Typo="Typo.caption">Created @_editedTicket.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                        <MudText Typo="Typo.caption">Updated @_editedTicket.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                    </MudStack>
-                </MudStack>
-            </MudItem>
-
-            <MudItem xs="6">
-                <MudPaper Outlined="true" Class="ticket-chat-panel">
-                    <MudTabs KeepPanelsAlive="true" Rounded="true" ApplyEffectsToContainer="true" Class="mud-height-full">
-                        <MudTabPanel Text="Conversation" Icon="@Icons.Material.Outlined.Chat">
-                            <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="UploadFileAsync" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isUploadingFile)" DragAndDrop="true" @bind-Dragging="_isDraggingFile" Class="ticket-chat-drop-upload">
-                                <CustomContent>
-                                    <div class="@($"ticket-chat-tab{(_isDraggingFile ? " ticket-chat-drop-active" : string.Empty)}")" @ondragenter="StartFileDragging">
-                                @if (_isLoadingMessages)
-                                {
-                                    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="ticket-chat-scroll">
-                                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                                    </MudStack>
-                                }
-                                else
-                                {
-                                    <div class="ticket-chat-scroll">
-                                        @if (_messages.Count == 0)
-                                        {
-                                            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mud-height-full">
-                                                <MudIcon Icon="@Icons.Material.Outlined.Forum" Color="Color.Secondary" Size="Size.Large" />
-                                                <MudText Typo="Typo.body2" Color="Color.Secondary">No messages yet</MudText>
-                                            </MudStack>
-                                        }
-                                        else
-                                        {
-                                            <MudStack Spacing="2">
-                                                @foreach (var message in _messages)
-                                                {
-                                                    <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
-                                                        <MudAvatar Color="Color.Primary" Size="Size.Medium">@GetMessageSenderInitials(message)</MudAvatar>
-                                                        <MudPaper Outlined="true" Class="pa-3 flex-grow-1">
-                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
-                                                                <MudText Typo="Typo.subtitle2">@GetMessageSenderName(message)</MudText>
-                                                                <MudText Typo="Typo.caption">@message.SentAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                                                            </MudStack>
-                                                            <MudText Typo="Typo.body2" Class="ticket-message-content">@message.Content</MudText>
-                                                        </MudPaper>
-                                                    </MudStack>
-                                                }
-                                            </MudStack>
-                                        }
-                                    </div>
-                                }
-
-                                @if (_isChatClosed)
-                                {
-                                    <MudAlert Severity="Severity.Info" Variant="Variant.Text" Dense="true">Reopen the ticket to continue the conversation.</MudAlert>
-                                }
-
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="pa-3">
-                                    <MudMenu Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomLeft">
-                                        <ActivatorContent>
-                                            <MudTooltip Text="Dodaj privitak">
-                                                <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@context.ToggleAsync" Disabled="@(_isChatClosed || _isUploadingFile)" aria-label="Dodaj privitak" />
-                                            </MudTooltip>
-                                        </ActivatorContent>
-                                        <ChildContent>
-                                            <MudFileUpload T="IBrowserFile" Accept=".png,.jpg,.jpeg" FilesChanged="UploadFileAsync" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isUploadingFile)" capture="environment">
-                                                <CustomContent Context="cameraUpload">
-                                                    <MudMenuItem Icon="@Icons.Material.Outlined.PhotoCamera" OnClick="@cameraUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isUploadingFile)">Kamera</MudMenuItem>
-                                                </CustomContent>
-                                                <SelectedTemplate></SelectedTemplate>
-                                            </MudFileUpload>
-                                            <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="UploadFileAsync" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isUploadingFile)">
-                                                <CustomContent Context="deviceUpload">
-                                                    <MudMenuItem Icon="@Icons.Material.Outlined.AttachFile" OnClick="@deviceUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isUploadingFile)">Datoteka s uređaja</MudMenuItem>
-                                                </CustomContent>
-                                                <SelectedTemplate></SelectedTemplate>
-                                            </MudFileUpload>
-                                        </ChildContent>
-                                    </MudMenu>
-                                    <MudTextField T="string" Label="Message" @bind-Value="_newMessage" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="@(_isChatClosed || _isSendingMessage)" Class="flex-grow-1" />
-                                    <MudTooltip Text="Pošalji poruku">
-                                        <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || string.IsNullOrWhiteSpace(_newMessage))" aria-label="Pošalji poruku" />
-                                    </MudTooltip>
-                                </MudStack>
-
-                                        @if (_isDraggingFile)
-                                        {
-                                            <div class="ticket-chat-drop-overlay">
-                                                <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Color="Color.Primary" Size="Size.Large" />
-                                                <MudText Typo="Typo.h6" Color="Color.Primary">Drop file to upload</MudText>
-                                            </div>
-                                        }
-                                    </div>
-                                </CustomContent>
-                                <SelectedTemplate></SelectedTemplate>
-                            </MudFileUpload>
-                        </MudTabPanel>
-
-                        <MudTabPanel Text="Media files" Icon="@Icons.Material.Outlined.AttachFile">
-                            <div class="ticket-chat-tab">
-                                @if (_isLoadingMediaFiles)
-                                {
-                                    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="ticket-chat-scroll">
-                                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                                    </MudStack>
-                                }
-                                else
-                                {
-                                    <div class="ticket-chat-scroll pa-3">
-                                        @if (_mediaFiles.Count == 0)
-                                        {
-                                            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mud-height-full">
-                                                <MudIcon Icon="@Icons.Material.Outlined.FolderOpen" Color="Color.Secondary" Size="Size.Large" />
-                                                <MudText Typo="Typo.body2" Color="Color.Secondary">No media files yet</MudText>
-                                            </MudStack>
-                                        }
-                                        else
-                                        {
-                                            <MudStack Spacing="2">
-                                                @foreach (var mediaFile in _mediaFiles)
-                                                {
-                                                    <MudPaper Outlined="true" Class="pa-3">
-                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                                                            <MudIcon Icon="@Icons.Material.Outlined.Description" Color="Color.Primary" />
-                                                            <MudStack Spacing="0" Class="flex-grow-1">
-                                                                <MudText Typo="Typo.subtitle2">@GetMediaFileName(mediaFile)</MudText>
-                                                                <MudText Typo="Typo.caption">@GetMediaUploaderName(mediaFile) · @FormatFileSize(mediaFile.SizeBytes) · @mediaFile.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                                                            </MudStack>
-                                                            <MudIconButton Icon="@Icons.Material.Outlined.Download" Color="Color.Primary" Href="@GetMediaDownloadUrl(mediaFile)" aria-label="Download file" />
+                                        <MudStack Spacing="2">
+                                            @foreach (var message in _messages)
+                                            {
+                                                <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+                                                    <MudAvatar Color="Color.Primary" Size="Size.Medium">@GetMessageSenderInitials(message)</MudAvatar>
+                                                    <MudPaper Outlined="true" Class="pa-3 flex-grow-1">
+                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+                                                            <MudText Typo="Typo.subtitle2">@GetMessageSenderName(message)</MudText>
+                                                            <MudText Typo="Typo.caption">@message.SentAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
                                                         </MudStack>
+                                                        <MudText Typo="Typo.body2" Class="ticket-message-content">@message.Content</MudText>
                                                     </MudPaper>
-                                                }
+                                                </MudStack>
+                                            }
+                                        </MudStack>
+                                    }
+                                </div>
+                            }
+
+                            @if (_isChatClosed)
+                            {
+                                <MudAlert Severity="Severity.Info" Variant="Variant.Text" Dense="true">Reopen the ticket to continue the conversation.</MudAlert>
+                            }
+
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="pa-3">
+                                <MudMenu Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomLeft">
+                                    <ActivatorContent>
+                                        <MudTooltip Text="Dodaj privitak">
+                                            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@context.ToggleAsync" Disabled="@(_isChatClosed || _isUploadingFile)" aria-label="Dodaj privitak" />
+                                        </MudTooltip>
+                                    </ActivatorContent>
+                                    <ChildContent>
+                                        <MudFileUpload T="IBrowserFile" Accept=".png,.jpg,.jpeg" FilesChanged="UploadFileAsync" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isUploadingFile)" capture="environment">
+                                            <CustomContent Context="cameraUpload">
+                                                <MudMenuItem Icon="@Icons.Material.Outlined.PhotoCamera" OnClick="@cameraUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isUploadingFile)">Kamera</MudMenuItem>
+                                            </CustomContent>
+                                            <SelectedTemplate></SelectedTemplate>
+                                        </MudFileUpload>
+                                        <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="UploadFileAsync" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isUploadingFile)">
+                                            <CustomContent Context="deviceUpload">
+                                                <MudMenuItem Icon="@Icons.Material.Outlined.AttachFile" OnClick="@deviceUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isUploadingFile)">Datoteka s uređaja</MudMenuItem>
+                                            </CustomContent>
+                                            <SelectedTemplate></SelectedTemplate>
+                                        </MudFileUpload>
+                                    </ChildContent>
+                                </MudMenu>
+                                <MudTextField T="string" Label="Message" @bind-Value="_newMessage" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="@(_isChatClosed || _isSendingMessage)" Class="flex-grow-1" />
+                                <MudTooltip Text="Pošalji poruku">
+                                    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || string.IsNullOrWhiteSpace(_newMessage))" aria-label="Pošalji poruku" />
+                                </MudTooltip>
+                            </MudStack>
+
+                            @if (_isDraggingFile)
+                            {
+                                <div class="ticket-chat-drop-overlay">
+                                    <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Color="Color.Primary" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Color="Color.Primary">Drop file to upload</MudText>
+                                </div>
+                            }
+                        </div>
+                    </CustomContent>
+                    <SelectedTemplate></SelectedTemplate>
+                </MudFileUpload>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Media files" Icon="@Icons.Material.Outlined.AttachFile">
+                <div class="ticket-chat-tab">
+                    @if (_isLoadingMediaFiles)
+                    {
+                        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="ticket-chat-scroll">
+                            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                        </MudStack>
+                    }
+                    else
+                    {
+                        <div class="ticket-chat-scroll pa-3">
+                            @if (_mediaFiles.Count == 0)
+                            {
+                                <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mud-height-full">
+                                    <MudIcon Icon="@Icons.Material.Outlined.FolderOpen" Color="Color.Secondary" Size="Size.Large" />
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">No media files yet</MudText>
+                                </MudStack>
+                            }
+                            else
+                            {
+                                <MudStack Spacing="2">
+                                    @foreach (var mediaFile in _mediaFiles)
+                                    {
+                                        <MudPaper Outlined="true" Class="pa-3">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                <MudIcon Icon="@Icons.Material.Outlined.Description" Color="Color.Primary" />
+                                                <MudStack Spacing="0" Class="flex-grow-1">
+                                                    <MudText Typo="Typo.subtitle2">@GetMediaFileName(mediaFile)</MudText>
+                                                    <MudText Typo="Typo.caption">@GetMediaUploaderName(mediaFile) · @FormatFileSize(mediaFile.SizeBytes) · @mediaFile.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                                                </MudStack>
+                                                <MudIconButton Icon="@Icons.Material.Outlined.Download" Color="Color.Primary" Href="@GetMediaDownloadUrl(mediaFile)" aria-label="Download file" />
                                             </MudStack>
-                                        }
-                                    </div>
-                                }
-                            </div>
-                        </MudTabPanel>
-                    </MudTabs>
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
+                                        </MudPaper>
+                                    }
+                                </MudStack>
+                            }
+                        </div>
+                    }
+                </div>
+            </MudTabPanel>
+        </MudTabs>
     </DialogContent>
 
     <DialogActions>
@@ -226,9 +222,11 @@
 </MudDialog>
 
 <style>
-    .ticket-chat-panel {
-        height: 620px;
-        overflow: hidden;
+    .ticket-details-tab {
+        height: 552px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding: 12px;
     }
 
     .ticket-chat-tab {
