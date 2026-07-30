@@ -34,6 +34,10 @@ public sealed class TicketDAL
                 "Ticket".*,
                 "Customer"."Email" AS "CustomerEmail",
                 "Operator"."Email" AS "OperatorEmail",
+                "Customer"."FirstName" AS "CustomerFirstName",
+                "Customer"."LastName" AS "CustomerLastName",
+                "Operator"."FirstName" AS "OperatorFirstName",
+                "Operator"."LastName" AS "OperatorLastName",
                 "TicketPriority"."DisplayName" AS "PriorityDisplayName",
                 "TicketPriority"."Impact" AS "PriorityImpact"
             FROM "{TicketTable}" AS "Ticket"
@@ -57,6 +61,10 @@ public sealed class TicketDAL
                 "Ticket".*,
                 "Customer"."Email" AS "CustomerEmail",
                 "Operator"."Email" AS "OperatorEmail",
+                "Customer"."FirstName" AS "CustomerFirstName",
+                "Customer"."LastName" AS "CustomerLastName",
+                "Operator"."FirstName" AS "OperatorFirstName",
+                "Operator"."LastName" AS "OperatorLastName",
                 "TicketPriority"."DisplayName" AS "PriorityDisplayName",
                 "TicketPriority"."Impact" AS "PriorityImpact"
             FROM "{TicketTable}" AS "Ticket"
@@ -103,6 +111,10 @@ public sealed class TicketDAL
                 "CreatedTicket".*,
                 "Customer"."Email" AS "CustomerEmail",
                 "Operator"."Email" AS "OperatorEmail",
+                "Customer"."FirstName" AS "CustomerFirstName",
+                "Customer"."LastName" AS "CustomerLastName",
+                "Operator"."FirstName" AS "OperatorFirstName",
+                "Operator"."LastName" AS "OperatorLastName",
                 "TicketPriority"."DisplayName" AS "PriorityDisplayName",
                 "TicketPriority"."Impact" AS "PriorityImpact"
             FROM "CreatedTicket"

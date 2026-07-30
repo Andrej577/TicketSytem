@@ -1,20 +1,20 @@
 2. SignalR za dashboard
 3. Redizajn dashboard (date picker)
 4. Events on Recent activity na dashboard
-5. Tickets dialog, umjesto maila neka pise ime i prezime
-6. Mailer funkcionalnost?
-7. KB ostaviti kako je ili redizajn (grupe u listi, novi filteri) ?
-8. Notification button (mozda maknuti a staviti badge na buttone kada se nesto promjeni tickets/kb/customers)
-9. Avatari na userima
-10. Logout redirect na login
-11. Nove ikone (koje imamo kupljene zaboravio sam gdje)
-12. Fix fonta na svim stranicama isti bi trebao biti (1.6 razlika na fontovima, bold gjde je bitno itd itd, računalna grafika)
-13. Secondary color da bude neka plava a ne roza? samo ne ova kričavo roza lolz
-14. Da se napravi button koji ce swithcat kartice i datagird? Onda gubimo filtere pa nam to nije dobro al mozda da uzmemo kartice ako se mogu grupirati
-15. Elevated ili flat izgled sučelja? Uzeti jedan i napraviti cjeli app konzistentnim
-16. Naziv aplikacije (?) Cricket nije opcija
-17. Napraviti da bude mobile (čak i odlika arhitekture da se prebacimo u MAUI pa imamo native mobile i nativ desktop - mozda poslje deploya ali onda svakako vidjeti kako ovo napraviti da bude dobro za mob u browseru jer je poanta da se koristi kamera i galeria mobitela za slanje slika/datoteka)
-18. Dali se moze drag napraviti datoteke u chat? Provjeriti testirati ako ne treba i to napraviti to je MUST
+5. Mailer funkcionalnost?
+6. KB ostaviti kako je ili redizajn (grupe u listi, novi filteri) ?
+7. Notification button (mozda maknuti a staviti badge na buttone kada se nesto promjeni tickets/kb/customers)
+8. Avatari na userima
+9. Logout redirect na login
+10. Nove ikone (koje imamo kupljene zaboravio sam gdje)
+11. Fix fonta na svim stranicama isti bi trebao biti (1.6 razlika na fontovima, bold gjde je bitno itd itd, računalna grafika)
+12. Secondary color da bude neka plava a ne roza? samo ne ova kričavo roza lolz
+13. Da se napravi button koji ce swithcat kartice i datagird? Onda gubimo filtere pa nam to nije dobro al mozda da uzmemo kartice ako se mogu grupirati
+14. Elevated ili flat izgled sučelja? Uzeti jedan i napraviti cjeli app konzistentnim
+15. Naziv aplikacije (?) Cricket nije opcija
+16. Napraviti da bude mobile (čak i odlika arhitekture da se prebacimo u MAUI pa imamo native mobile i nativ desktop - mozda poslje deploya ali onda svakako vidjeti kako ovo napraviti da bude dobro za mob u browseru jer je poanta da se koristi kamera i galeria mobitela za slanje slika/datoteka)
+17. Chat mora imat preview graficke datoteke (slike itd)
+18. Ako se dropa datoteka u chat neka bude kao lista datoteka koje su spremne za slanje i kada se pošalju neka poruka ima naziv datotkee i opciju za dowload
 19. Gsap animacije? Cisto vidjeti pa nekako ugurati koju animaciju da se dobije osjećaj za framework, ne treba biti vatromet al cisto da vidimo kako se ponaša u real aplikacijama
 20. Staviti aplikaciju na sustav metrike, dali postoje operacije koje se vrte u petlji i opterećuju bazu
 21. Provjeriti migracijsku datoteku i dali svi pozivi u bazu podataka imaju smisla

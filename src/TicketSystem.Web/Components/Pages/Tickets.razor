@@ -175,6 +175,8 @@
     private IDisposable? _ticketUpdatedSubscription;
     private string _accessToken = string.Empty;
     private string _currentUserEmail = string.Empty;
+    private string _currentUserFirstName = string.Empty;
+    private string _currentUserLastName = string.Empty;
     private Guid _currentUserId;
     private string? _loadErrorMessage;
     private bool _isAdministrator;
@@ -197,6 +199,8 @@
         var authenticationState = await _authenticationState;
         _currentUserId = Guid.Parse(authenticationState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         _currentUserEmail = authenticationState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)!.Value;
+        _currentUserFirstName = authenticationState.User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)!.Value;
+        _currentUserLastName = authenticationState.User.FindFirst(System.Security.Claims.ClaimTypes.Surname)!.Value;
         _isAdministrator = authenticationState.User.IsInRole(nameof(AppUserType.Administrator));
         _isCustomer = authenticationState.User.IsInRole(nameof(AppUserType.Customer));
         _isOperator = authenticationState.User.IsInRole(nameof(AppUserType.Operator));
@@ -431,13 +435,15 @@
             [nameof(TicketDialog._isOperator)] = _isOperator,
             [nameof(TicketDialog._currentUserId)] = _currentUserId,
             [nameof(TicketDialog._currentUserEmail)] = _currentUserEmail,
+            [nameof(TicketDialog._currentUserFirstName)] = _currentUserFirstName,
+            [nameof(TicketDialog._currentUserLastName)] = _currentUserLastName,
             [nameof(TicketDialog._accessToken)] = _accessToken
         };
         var options = new DialogOptions
         {
             CloseButton = true,
             FullWidth = true,
-            MaxWidth = MaxWidth.ExtraLarge,
+            MaxWidth = MaxWidth.Medium,
             BackdropClick = false,
             BackgroundClass = "blur-class"
         };

@@ -18,7 +18,7 @@
 
                         <MudGrid Spacing="2">
                             <MudItem xs="6">
-                                <MudTextField T="string" Label="Sender email" Value="@_editedTicket.CustomerEmail" ReadOnly="true" Variant="Variant.Outlined" />
+                                <MudTextField T="string" Label="Customer" Value="@_editedTicket.CustomerName" ReadOnly="true" Variant="Variant.Outlined" />
                             </MudItem>
                             <MudItem xs="6">
                                 @if (_canAssign)
@@ -27,13 +27,13 @@
                                         <MudSelectItem T="Guid?" Value="@((Guid?)null)">Unassigned</MudSelectItem>
                                         @foreach (var appOperator in _operators)
                                         {
-                                            <MudSelectItem T="Guid?" Value="@((Guid?)appOperator.Id)">@appOperator.Email</MudSelectItem>
+                                            <MudSelectItem T="Guid?" Value="@((Guid?)appOperator.Id)">@($"{appOperator.FirstName} {appOperator.LastName}")</MudSelectItem>
                                         }
                                     </MudSelect>
                                 }
                                 else
                                 {
-                                    <MudTextField T="string" Label="Assigned to" Value="@(_editedTicket.OperatorEmail ?? "Unassigned")" ReadOnly="true" Variant="Variant.Outlined" />
+                                    <MudTextField T="string" Label="Assigned to" Value="@(_editedTicket.OperatorName ?? "Unassigned")" ReadOnly="true" Variant="Variant.Outlined" />
                                 }
                             </MudItem>
                             <MudItem xs="12">
@@ -316,6 +316,12 @@
 
     [Parameter]
     public string _currentUserEmail { get; set; } = string.Empty;
+
+    [Parameter]
+    public string _currentUserFirstName { get; set; } = string.Empty;
+
+    [Parameter]
+    public string _currentUserLastName { get; set; } = string.Empty;
 
     [Parameter]
     public string _accessToken { get; set; } = string.Empty;
@@ -656,6 +662,8 @@
 
         _editedTicket.OperatorId = _currentUserId;
         _editedTicket.OperatorEmail = _currentUserEmail;
+        _editedTicket.OperatorFirstName = _currentUserFirstName;
+        _editedTicket.OperatorLastName = _currentUserLastName;
         _isReadOnly = false;
     }
 
@@ -712,9 +720,12 @@
 
             if (_canAssign)
             {
-                _editedTicket.OperatorEmail = _editedTicket.OperatorId.HasValue
-                    ? _operators.Single(appOperator => appOperator.Id == _editedTicket.OperatorId.Value).Email
+                var assignedOperator = _editedTicket.OperatorId.HasValue
+                    ? _operators.Single(appOperator => appOperator.Id == _editedTicket.OperatorId.Value)
                     : null;
+                _editedTicket.OperatorEmail = assignedOperator?.Email;
+                _editedTicket.OperatorFirstName = assignedOperator?.FirstName;
+                _editedTicket.OperatorLastName = assignedOperator?.LastName;
             }
 
             _dialogInstance.Close(DialogResult.Ok(_editedTicket));
