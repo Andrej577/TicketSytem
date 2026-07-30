@@ -1,77 +1,488 @@
 @page "/"
 @attribute [Authorize(Roles = nameof(AppUserType.Administrator))]
+@implements IAsyncDisposable
+@using System.Text.Json
+@using Microsoft.AspNetCore.SignalR.Client
+@using TicketSystem.Shared.Realtime
+@inject TicketSystemApiClient ApiClient
+@inject IConfiguration Configuration
+@inject ISnackbar Snackbar
 
-<PageTitle>Ticket System</PageTitle>
+<PageTitle>Dashboard | Ticket System</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
-    <MudPaper Class="pa-4 mb-4" aria-label="Dashboard filters">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-            <MudText Typo="Typo.overline">Filters</MudText>
-            <MudSelect T="string" Label="Organization" Variant="Variant.Outlined" Dense="true" Disabled="true" />
-            <MudSelect T="string" Label="Category" Variant="Variant.Outlined" Dense="true" Disabled="true" />
-            <MudIconButton Icon="@Icons.Material.Outlined.Add" Disabled="true" aria-label="Add filter" />
-            <MudSpacer />
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                <MudIcon Icon="@Icons.Material.Outlined.Schedule" Size="Size.Small" />
-                <MudText Typo="Typo.caption">No period selected</MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4 dashboard-page">
+    <MudStack Spacing="3" Class="dashboard-page-content">
+        <MudText Typo="Typo.h4">Dashboard</MudText>
+
+        <MudPaper Class="pa-4" aria-label="Dashboard filters">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudText Typo="Typo.overline">Period</MudText>
+                <MudDateRangePicker Label="Date range" @bind-DateRange="_dateRange" @bind-DateRange:after="LoadDashboardAsync" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 280px;" />
+                <MudSpacer />
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
+                }
             </MudStack>
-        </MudStack>
-    </MudPaper>
+        </MudPaper>
 
-    <MudPaper Class="pa-4 mb-4">
-        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-            <MudIcon Icon="@Icons.Material.Outlined.FilterList" />
-            <MudTextField T="string" Placeholder="Search by title, user, or tag…" Variant="Variant.Text" Margin="Margin.Dense" FullWidth="true" Disabled="true" />
-        </MudStack>
-    </MudPaper>
+        @if (!string.IsNullOrWhiteSpace(_loadErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.subtitle1">Dashboard could not be loaded</MudText>
+                    <MudText Typo="Typo.body2">@_loadErrorMessage</MudText>
+                    <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Outlined.Refresh" OnClick="LoadDashboardAsync">Try again</MudButton>
+                </MudStack>
+            </MudAlert>
+        }
 
-    <MudGrid Spacing="3">
-        <MudItem xs="12" md="6" lg="4">
-            <MudPaper Class="pa-4">
-                <DashboardCardHeader Title="Recent activity" Subtitle="Activity will appear when data is connected" />
-                <MudDivider Class="my-4" />
-                <EmptyDashboardState Icon="@Icons.Material.Outlined.History" Text="No activity available" />
-            </MudPaper>
-        </MudItem>
+        <div class="dashboard-body">
+            <div class="dashboard-row">
+                <div class="dashboard-cell">
+                    <MudPaper Class="pa-4 dashboard-card">
+                        <DashboardCardHeader Title="Recent activity" Subtitle="Latest events" />
+                        <MudDivider Class="my-4" />
+                        <div class="dashboard-card-body">
+                            @if (_dashboard is null || _dashboard.RecentActivity.Count == 0)
+                            {
+                                <EmptyDashboardState Icon="@Icons.Material.Outlined.History" Text="No activity available" />
+                            }
+                            else
+                            {
+                                <MudList T="string" Dense="true">
+                                    @foreach (var activity in _dashboard.RecentActivity)
+                                    {
+                                        <MudListItem T="string" Icon="@GetActivityIcon(activity.EventType)">
+                                            <MudText Typo="Typo.body2">@GetActivityText(activity)</MudText>
+                                            <MudText Typo="Typo.caption">@activity.OccurredAt.ToLocalTime().ToString("g")</MudText>
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                            }
+                        </div>
+                    </MudPaper>
+                </div>
 
-        <MudItem xs="12" md="6" lg="4">
-            <MudPaper Class="pa-4">
-                <DashboardCardHeader Title="Most active categories" Subtitle="Ticket category overview" />
-                <MudDivider Class="my-4" />
-                <EmptyDashboardState Icon="@Icons.Material.Outlined.DonutLarge" Text="No category data available" />
-            </MudPaper>
-        </MudItem>
+                <div class="dashboard-cell">
+                    <MudPaper Class="pa-4 dashboard-card">
+                        <DashboardCardHeader Title="Ticket overview" Subtitle="Statuses and priorities" />
+                        <MudDivider Class="my-4" />
+                        <div class="dashboard-card-body">
+                            @if (_dashboard is null || _dashboard.TicketsByStatus.Sum(status => status.Count) == 0)
+                            {
+                                <EmptyDashboardState Icon="@Icons.Material.Outlined.ConfirmationNumber" Text="No tickets in this period" />
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.caption">By status</MudText>
+                                <MudChart T="double" ChartType="ChartType.Donut" ChartSeries="_statusSeries" ChartLabels="_statusLabels" ChartOptions="_statusChartOptions" Width="100%" Height="180px" />
+                                <MudText Typo="Typo.caption" Class="mt-2">By priority</MudText>
+                                <MudChart T="double" ChartType="ChartType.Donut" ChartSeries="_prioritySeries" ChartLabels="_priorityLabels" ChartOptions="_priorityChartOptions" Width="100%" Height="180px" />
+                            }
+                        </div>
+                    </MudPaper>
+                </div>
 
-        <MudItem xs="12" md="6" lg="4">
-            <MudPaper Class="pa-4">
-                <DashboardCardHeader Title="First response time" Subtitle="Response time trend" />
-                <MudDivider Class="my-4" />
-                <EmptyDashboardState Icon="@Icons.Material.Outlined.ShowChart" Text="No response data available" />
-            </MudPaper>
-        </MudItem>
+                <div class="dashboard-cell dashboard-cell-stacked">
+                    <MudPaper Class="pa-4 dashboard-card">
+                        <DashboardCardHeader Title="Summary" Subtitle="Key indicators" />
+                        <MudDivider Class="my-4" />
+                        <div class="dashboard-card-body">
+                            @if (_dashboard is null)
+                            {
+                                <EmptyDashboardState Icon="@Icons.Material.Outlined.QueryStats" Text="No indicators available" />
+                            }
+                            else
+                            {
+                                <MudStack Spacing="3">
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText Typo="Typo.body2">Open tickets</MudText>
+                                        <MudText Typo="Typo.subtitle2">@_dashboard.Summary.OpenTicketCount</MudText>
+                                    </MudStack>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText Typo="Typo.body2">Created in period</MudText>
+                                        <MudText Typo="Typo.subtitle2">@_dashboard.Summary.TicketsCreatedInRange</MudText>
+                                    </MudStack>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText Typo="Typo.body2">Avg. resolution time</MudText>
+                                        <MudText Typo="Typo.subtitle2">@FormatHours(_dashboard.Summary.AvgResolutionHours)</MudText>
+                                    </MudStack>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText Typo="Typo.body2">Active chat sessions</MudText>
+                                        <MudText Typo="Typo.subtitle2">@_dashboard.Summary.ActiveChatSessionCount</MudText>
+                                    </MudStack>
+                                    <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                        <MudText Typo="Typo.body2">Urgent tickets pending</MudText>
+                                        <MudText Typo="Typo.subtitle2" Color="Color.Error">@_dashboard.Summary.UrgentOpenTicketCount</MudText>
+                                    </MudStack>
+                                </MudStack>
+                            }
+                        </div>
+                    </MudPaper>
 
-        <MudItem xs="12" md="6" lg="4">
-            <MudPaper Class="pa-4">
-                <DashboardCardHeader Title="Tickets by location" Subtitle="Ticket distribution" />
-                <MudDivider Class="my-4" />
-                <EmptyDashboardState Icon="@Icons.Material.Outlined.LocationOn" Text="No location data available" />
-            </MudPaper>
-        </MudItem>
-
-        <MudItem xs="12" md="6" lg="4">
-            <MudPaper Class="pa-4">
-                <DashboardCardHeader Title="Ticket overview" Subtitle="Statuses and priorities" />
-                <MudDivider Class="my-4" />
-                <EmptyDashboardState Icon="@Icons.Material.Outlined.ConfirmationNumber" Text="No tickets available" />
-            </MudPaper>
-        </MudItem>
-
-        <MudItem xs="12" md="6" lg="4">
-            <MudPaper Class="pa-4">
-                <DashboardCardHeader Title="Summary" Subtitle="Key indicators" />
-                <MudDivider Class="my-4" />
-                <EmptyDashboardState Icon="@Icons.Material.Outlined.QueryStats" Text="No indicators available" />
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
+                    <MudPaper Class="pa-4 dashboard-card">
+                        <DashboardCardHeader Title="First response time" Subtitle="Response time trend" />
+                        <MudDivider Class="my-4" />
+                        <div class="dashboard-card-body">
+                            @if (_dashboard is null || _dashboard.FirstResponseTrend.Count == 0)
+                            {
+                                <EmptyDashboardState Icon="@Icons.Material.Outlined.ShowChart" Text="No response data available" />
+                            }
+                            else
+                            {
+                                <MudChart T="double" ChartType="ChartType.Line" ChartSeries="_firstResponseSeries" ChartLabels="_firstResponseLabels" Width="100%" Height="220px" />
+                            }
+                        </div>
+                    </MudPaper>
+                </div>
+            </div>
+        </div>
+    </MudStack>
 </MudContainer>
+
+<style>
+    .dashboard-page {
+        height: calc(100dvh - var(--mud-appbar-height));
+        overflow: hidden;
+    }
+
+    .dashboard-page-content {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .dashboard-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .dashboard-row {
+        display: flex;
+        gap: 12px;
+        min-height: 0;
+        flex: 1 1 auto;
+    }
+
+    .dashboard-cell {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+    }
+
+    .dashboard-cell-stacked {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .dashboard-card {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+    }
+
+    .dashboard-card-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+    }
+</style>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> _authenticationState { get; set; } = default!;
+
+    private HubConnection? _ticketHubConnection;
+    private HubConnection? _chatHubConnection;
+    private HubConnection? _knowledgeHubConnection;
+    private IDisposable? _ticketCreatedSubscription;
+    private IDisposable? _ticketUpdatedSubscription;
+    private IDisposable? _ticketDeletedSubscription;
+    private IDisposable? _chatChangedSubscription;
+    private IDisposable? _knowledgeChangedSubscription;
+    private CancellationTokenSource? _refreshDebounceCts;
+
+    private DashboardDTO? _dashboard;
+    private DateRange _dateRange = new(DateTime.Today.AddDays(-30), DateTime.Today);
+    private bool _isLoading = true;
+    private string? _loadErrorMessage;
+
+    private List<ChartSeries<double>> _statusSeries = [];
+    private string[] _statusLabels = [];
+    private ChartOptions _statusChartOptions = new();
+    private List<ChartSeries<double>> _prioritySeries = [];
+    private string[] _priorityLabels = [];
+    private ChartOptions _priorityChartOptions = new();
+    private List<ChartSeries<double>> _firstResponseSeries = [];
+    private string[] _firstResponseLabels = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var authenticationState = await _authenticationState;
+        var accessToken = authenticationState.User.FindFirst(TicketSystemClaimTypes.ApiAccessToken)!.Value;
+
+        await ConnectToTicketHubAsync(accessToken);
+        await ConnectToChatHubAsync(accessToken);
+        await ConnectToKnowledgeHubAsync(accessToken);
+        await LoadDashboardAsync();
+        StateHasChanged();
+    }
+
+    private async Task ConnectToTicketHubAsync(string accessToken)
+    {
+        _ticketHubConnection = BuildHubConnection(RealtimeHubRoutes.Tickets, accessToken);
+        _ticketCreatedSubscription = _ticketHubConnection.On<Guid>(TicketRealtimeEvents.Created, HandleTicketRealtimeEventAsync);
+        _ticketUpdatedSubscription = _ticketHubConnection.On<Guid>(TicketRealtimeEvents.Updated, HandleTicketRealtimeEventAsync);
+        _ticketDeletedSubscription = _ticketHubConnection.On<Guid>(TicketRealtimeEvents.Deleted, HandleTicketRealtimeEventAsync);
+        _ticketHubConnection.Reconnected += HandleHubReconnectedAsync;
+
+        await StartHubConnectionAsync(_ticketHubConnection, "Live ticket updates are currently unavailable.");
+    }
+
+    private async Task ConnectToChatHubAsync(string accessToken)
+    {
+        _chatHubConnection = BuildHubConnection(RealtimeHubRoutes.Chat, accessToken);
+        _chatChangedSubscription = _chatHubConnection.On<Guid, Guid>(ChatRealtimeEvents.Changed, HandleChatChangedAsync);
+        _chatHubConnection.Reconnected += HandleHubReconnectedAsync;
+
+        await StartHubConnectionAsync(_chatHubConnection, "Live chat updates are currently unavailable.");
+    }
+
+    private async Task ConnectToKnowledgeHubAsync(string accessToken)
+    {
+        _knowledgeHubConnection = BuildHubConnection(RealtimeHubRoutes.Knowledge, accessToken);
+        _knowledgeChangedSubscription = _knowledgeHubConnection.On(KnowledgeRealtimeEvents.Changed, HandleKnowledgeChangedAsync);
+        _knowledgeHubConnection.Reconnected += HandleHubReconnectedAsync;
+
+        await StartHubConnectionAsync(_knowledgeHubConnection, "Live knowledge base updates are currently unavailable.");
+    }
+
+    private HubConnection BuildHubConnection(string route, string accessToken)
+    {
+        var realtimeBaseUrl = Configuration["Realtime:BaseUrl"]
+            ?? throw new InvalidOperationException("The 'Realtime:BaseUrl' configuration value is required.");
+
+        return new HubConnectionBuilder()
+            .WithUrl($"{realtimeBaseUrl.TrimEnd('/')}{route}", options =>
+            {
+                options.AccessTokenProvider = () => Task.FromResult<string?>(accessToken);
+            })
+            .WithAutomaticReconnect()
+            .Build();
+    }
+
+    private async Task StartHubConnectionAsync(HubConnection hubConnection, string unavailableMessage)
+    {
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            try
+            {
+                await hubConnection.StartAsync();
+                return;
+            }
+            catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or TaskCanceledException)
+            {
+                if (attempt == 3)
+                {
+                    Snackbar.Add(unavailableMessage, Severity.Warning);
+                    return;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
+        }
+    }
+
+    private Task HandleTicketRealtimeEventAsync(Guid ticketId)
+    {
+        QueueDashboardRefresh();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleChatChangedAsync(Guid ticketId, Guid chatSessionId)
+    {
+        QueueDashboardRefresh();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleKnowledgeChangedAsync()
+    {
+        QueueDashboardRefresh();
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleHubReconnectedAsync(string? connectionId)
+    {
+        await InvokeAsync(LoadDashboardAsync);
+    }
+
+    private void QueueDashboardRefresh()
+    {
+        _refreshDebounceCts?.Cancel();
+        _refreshDebounceCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _refreshDebounceCts = cts;
+        _ = DebouncedRefreshAsync(cts.Token);
+    }
+
+    private async Task DebouncedRefreshAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(800), cancellationToken);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        await InvokeAsync(async () =>
+        {
+            await LoadDashboardAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        _isLoading = true;
+        _loadErrorMessage = null;
+
+        try
+        {
+            var fromDate = new DateTimeOffset(_dateRange.Start ?? DateTime.Today.AddDays(-30));
+            var toDate = new DateTimeOffset((_dateRange.End ?? DateTime.Today).Date.AddDays(1).AddTicks(-1));
+            var query = $"api/dashboard?fromDate={Uri.EscapeDataString(fromDate.ToString("o"))}&toDate={Uri.EscapeDataString(toDate.ToString("o"))}";
+
+            using var response = await ApiClient.GetAsync(query);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _loadErrorMessage = "The API returned an error while loading the dashboard.";
+                return;
+            }
+
+            _dashboard = await response.Content.ReadFromJsonAsync<DashboardDTO>();
+            BuildChartData();
+        }
+        catch (HttpRequestException)
+        {
+            _loadErrorMessage = "The API is currently unavailable. Please try again later.";
+        }
+        catch (JsonException)
+        {
+            _loadErrorMessage = "The API returned an invalid dashboard response.";
+        }
+        catch (TaskCanceledException)
+        {
+            _loadErrorMessage = "The dashboard request timed out. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void BuildChartData()
+    {
+        if (_dashboard is null)
+        {
+            return;
+        }
+
+        _statusSeries = [new ChartSeries<double> { Name = "Tickets", Data = new ChartData<double>([.. _dashboard.TicketsByStatus.Select(status => (double)status.Count)]) }];
+        _statusLabels = [.. _dashboard.TicketsByStatus.Select(status => status.StatusName)];
+        _statusChartOptions = new ChartOptions { ChartPalette = [.. _dashboard.TicketsByStatus.Select(status => GetStatusChartColor(status.StatusId))] };
+
+        _prioritySeries = [new ChartSeries<double> { Name = "Tickets", Data = new ChartData<double>([.. _dashboard.TicketsByPriority.Select(priority => (double)priority.Count)]) }];
+        _priorityLabels = [.. _dashboard.TicketsByPriority.Select(priority => priority.PriorityName)];
+        _priorityChartOptions = new ChartOptions { ChartPalette = [.. _dashboard.TicketsByPriority.Select(priority => ToChartColor(TicketPriorityColorMapper.GetColor(priority.Impact)))] };
+
+        _firstResponseSeries = [new ChartSeries<double> { Name = "Avg. minutes", Data = new ChartData<double>([.. _dashboard.FirstResponseTrend.Select(point => point.AvgResponseMinutes ?? 0)]) }];
+        _firstResponseLabels = [.. _dashboard.FirstResponseTrend.Select(point => point.Date.ToString("MMM d"))];
+    }
+
+    private static string GetStatusChartColor(short statusId)
+    {
+        var color = TicketStatusOptions.All.First(option => option.Id == statusId).Color;
+        return ToChartColor(color);
+    }
+
+    private static string ToChartColor(Color color) => color switch
+    {
+        Color.Info => "var(--mud-palette-info)",
+        Color.Warning => "var(--mud-palette-warning)",
+        Color.Success => "var(--mud-palette-success)",
+        Color.Error => "var(--mud-palette-error)",
+        _ => "var(--mud-palette-action-default)"
+    };
+
+    private static string FormatHours(double? hours)
+    {
+        if (!hours.HasValue)
+        {
+            return "N/A";
+        }
+
+        return hours.Value < 24 ? $"{hours.Value:0.#}h" : $"{hours.Value / 24:0.#}d";
+    }
+
+    private static string GetActivityIcon(string eventType) => eventType switch
+    {
+        "TicketCreated" => Icons.Material.Outlined.ConfirmationNumber,
+        "TicketClosed" => Icons.Material.Outlined.CheckCircleOutline,
+        "MessageSent" => Icons.Material.Outlined.Chat,
+        "KnowledgePublished" => Icons.Material.Outlined.MenuBook,
+        _ => Icons.Material.Outlined.History
+    };
+
+    private static string GetActivityText(DashboardActivityItemDTO activity) => activity.EventType switch
+    {
+        "TicketCreated" => $"New ticket \"{activity.Title}\" created by {activity.ActorEmail}",
+        "TicketClosed" => $"Ticket \"{activity.Title}\" closed",
+        "MessageSent" => $"{activity.ActorEmail} sent a message on \"{activity.Title}\"",
+        "KnowledgePublished" => $"Knowledge article \"{activity.Title}\" published by {activity.ActorEmail}",
+        _ => activity.Title
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        _refreshDebounceCts?.Cancel();
+        _refreshDebounceCts?.Dispose();
+
+        _ticketCreatedSubscription?.Dispose();
+        _ticketUpdatedSubscription?.Dispose();
+        _ticketDeletedSubscription?.Dispose();
+        _chatChangedSubscription?.Dispose();
+        _knowledgeChangedSubscription?.Dispose();
+
+        if (_ticketHubConnection is not null)
+        {
+            _ticketHubConnection.Reconnected -= HandleHubReconnectedAsync;
+            await _ticketHubConnection.DisposeAsync();
+        }
+
+        if (_chatHubConnection is not null)
+        {
+            _chatHubConnection.Reconnected -= HandleHubReconnectedAsync;
+            await _chatHubConnection.DisposeAsync();
+        }
+
+        if (_knowledgeHubConnection is not null)
+        {
+            _knowledgeHubConnection.Reconnected -= HandleHubReconnectedAsync;
+            await _knowledgeHubConnection.DisposeAsync();
+        }
+    }
+}
