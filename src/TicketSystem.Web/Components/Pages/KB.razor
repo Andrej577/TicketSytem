@@ -17,7 +17,6 @@
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
             <MudStack Spacing="0">
                 <MudText Typo="Typo.h4">Knowledge base</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Create and maintain reusable support articles.</MudText>
             </MudStack>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Add" OnClick="@(() => OpenKnowledgeDialogAsync(null))" Disabled="@(_isLoading || _statuses.Count == 0)">
                 New article

@@ -26,15 +26,17 @@
             <AuthorizeView Roles="Operator,Administrator">
                 <MudButton Href="/knowledge-base" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.MenuBook">Knowledge base</MudButton>
             </AuthorizeView>
-            <AuthorizeView>
-                <Authorized>
-                    <MudButton Href="/settings" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Settings">Settings</MudButton>
-                </Authorized>
-            </AuthorizeView>
         </MudStack>
         <MudSpacer />
         <AuthorizeView Roles="@nameof(AppUserType.Administrator)">
             <MudIconButton Icon="@Icons.Material.Outlined.Search" Color="Color.Inherit" aria-label="Search" />
+        </AuthorizeView>
+        <AuthorizeView>
+            <Authorized>
+                <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Outlined.DarkMode : Icons.Material.Outlined.LightMode)" Color="Color.Inherit" OnClick="ToggleDarkModeAsync" aria-label="Toggle dark mode" />
+            </Authorized>
+        </AuthorizeView>
+        <AuthorizeView Roles="@nameof(AppUserType.Administrator)">
             <MudIconButton Icon="@Icons.Material.Outlined.NotificationsNone" Color="Color.Inherit" aria-label="Notifications" />
         </AuthorizeView>
         <AuthorizeView>
@@ -80,6 +82,13 @@
     private void HandleThemeChanged()
     {
         _ = InvokeAsync(StateHasChanged);
+    }
+
+    private bool _isDarkMode => ThemeState.IsDarkMode;
+
+    private async Task ToggleDarkModeAsync()
+    {
+        await ThemeState.SetDarkModeAsync(!ThemeState.IsDarkMode, JSRuntime);
     }
 
     public void Dispose()
