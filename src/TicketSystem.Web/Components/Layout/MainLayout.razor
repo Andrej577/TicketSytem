@@ -28,9 +28,6 @@
             </AuthorizeView>
         </MudStack>
         <MudSpacer />
-        <AuthorizeView Roles="@nameof(AppUserType.Administrator)">
-            <MudIconButton Icon="@Icons.Material.Outlined.Search" Color="Color.Inherit" aria-label="Search" />
-        </AuthorizeView>
         <AuthorizeView>
             <Authorized>
                 <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Outlined.DarkMode : Icons.Material.Outlined.LightMode)" Color="Color.Inherit" OnClick="ToggleDarkModeAsync" aria-label="Toggle dark mode" />
