@@ -9,12 +9,16 @@
 @inject ISnackbar Snackbar
 
 <MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Ticket #@_editedTicket.TicketNumber</MudText>
+    </TitleContent>
     <DialogContent>
-        <MudTabs KeepPanelsAlive="true" Rounded="true" ApplyEffectsToContainer="true">
+        <div class="ticket-tabs-header">
+            <MudTabs KeepPanelsAlive="true" Rounded="true" ApplyEffectsToContainer="true">
             <MudTabPanel Text="Details" Icon="@Icons.Material.Outlined.Info">
                 <div class="ticket-details-tab">
                     <MudStack Spacing="3">
-                        <MudTextField T="string" Label="Title" @bind-Value="_editedTicket.Title" ReadOnly="_isReadOnly" Variant="Variant.Outlined" />
+                        <MudTextField T="string" Label="Title" @bind-Value="_editedTicket.Title" @bind-Value:after="AutoSaveAsync" ReadOnly="_isReadOnly" Variant="Variant.Outlined" />
 
                         <MudGrid Spacing="2">
                             <MudItem xs="6">
@@ -23,7 +27,7 @@
                             <MudItem xs="6">
                                 @if (_canAssign)
                                 {
-                                    <MudSelect T="Guid?" Label="Assigned to" @bind-Value="_editedTicket.OperatorId" Variant="Variant.Outlined" Disabled="_isLoadingOperators">
+                                    <MudSelect T="Guid?" Label="Assigned to" @bind-Value="_editedTicket.OperatorId" @bind-Value:after="AutoSaveAsync" Variant="Variant.Outlined" Disabled="_isLoadingOperators">
                                         <MudSelectItem T="Guid?" Value="@((Guid?)null)">Unassigned</MudSelectItem>
                                         @foreach (var appOperator in _operators)
                                         {
@@ -39,7 +43,7 @@
                             <MudItem xs="12">
                                 <MudStack Spacing="1">
                                     <MudText Typo="Typo.body2">Priority</MudText>
-                                    <MudToggleGroup T="short" @bind-Value="_editedTicket.PriorityId" Vertical="false" Color="@GetPriorityColor()" Disabled="@(_isReadOnly || _isLoadingPriorities || _priorities.Count == 0)" Class="mud-width-full">
+                                    <MudToggleGroup T="short" @bind-Value="_editedTicket.PriorityId" @bind-Value:after="AutoSaveAsync" Vertical="false" Color="@GetPriorityColor()" Disabled="@(_isReadOnly || _isLoadingPriorities || _priorities.Count == 0)" Class="mud-width-full">
                                         @foreach (var priority in _priorities)
                                         {
                                             <MudToggleItem T="short" Value="@priority.Id" Text="@priority.DisplayName" />
@@ -50,7 +54,7 @@
                             <MudItem xs="12">
                                 <MudStack Spacing="1">
                                     <MudText Typo="Typo.body2">Status</MudText>
-                                    <MudToggleGroup T="short" @bind-Value="_editedTicket.StatusId" Vertical="false" Color="@GetStatusColor()" Disabled="_isReadOnly" Class="mud-width-full">
+                                    <MudToggleGroup T="short" @bind-Value="_editedTicket.StatusId" @bind-Value:after="AutoSaveAsync" Vertical="false" Color="@GetStatusColor()" Disabled="_isReadOnly" Class="mud-width-full">
                                         @foreach (var status in TicketStatusOptions.All)
                                         {
                                             <MudToggleItem T="short" Value="@status.Id" Text="@status.Name" />
@@ -65,7 +69,7 @@
                             <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
                         }
 
-                        <MudTextField T="string" Label="Content" @bind-Value="_editedTicket.Content" ReadOnly="_isReadOnly" Lines="6" Variant="Variant.Outlined" />
+                        <MudTextField T="string" Label="Content" @bind-Value="_editedTicket.Content" @bind-Value:after="AutoSaveAsync" ReadOnly="_isReadOnly" Lines="6" Variant="Variant.Outlined" />
 
                         <MudStack Spacing="0">
                             <MudText Typo="Typo.caption">Created @_editedTicket.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
@@ -181,7 +185,7 @@
                                         </MudFileUpload>
                                     </ChildContent>
                                 </MudMenu>
-                                <MudTextField T="string" Label="Message" @bind-Value="_newMessage" Immediate="true" OnKeyDown="HandleMessageKeyDownAsync" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="@(_isChatClosed || _isSendingMessage)" Class="flex-grow-1" />
+                                <MudTextField @ref="_messageTextField" T="string" Label="Message" @bind-Value="_newMessage" Immediate="true" OnKeyDown="HandleMessageKeyDownAsync" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="_isChatClosed" Class="flex-grow-1" />
                                 <MudTooltip Text="Pošalji poruku">
                                     <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || (string.IsNullOrWhiteSpace(_newMessage) && _pendingFiles.Count == 0))" aria-label="Pošalji poruku" />
                                 </MudTooltip>
@@ -240,26 +244,29 @@
                     }
                 </div>
             </MudTabPanel>
-        </MudTabs>
-    </DialogContent>
-
-    <DialogActions>
-        <MudStack Row="true" AlignItems="AlignItems.Center" Class="px-4 mud-width-full">
+            </MudTabs>
             @if (_canDelete)
             {
-                <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)">Delete</MudButton>
+                <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)" Class="ticket-delete-button">Delete</MudButton>
             }
-            <MudSpacer />
-            @if (!_isReadOnly)
-            {
-                <MudButton Variant="Variant.Text" OnClick="Cancel" Disabled="@(_isSaving || _isDeleting)">Cancel</MudButton>
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Outlined.Save" OnClick="SaveAsync" Disabled="@(_isLoadingPriorities || _isLoadingOperators || _priorities.Count == 0 || _isSaving || _isDeleting)">Save</MudButton>
-            }
-        </MudStack>
-    </DialogActions>
+        </div>
+    </DialogContent>
 </MudDialog>
 
 <style>
+    .ticket-tabs-header {
+        position: relative;
+    }
+
+    .ticket-delete-button {
+        bottom: 0;
+        height: 36px;
+        margin: auto 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+    }
+
     .ticket-details-tab {
         height: 552px;
         overflow-x: hidden;
@@ -389,6 +396,8 @@
     private HubConnection? _chatHubConnection;
     private IDisposable? _chatChangedSubscription;
     private string _newMessage = string.Empty;
+    private MudTextField<string>? _messageTextField;
+    private bool _shouldFocusMessageField;
     private bool _assignToCurrentUser;
     private bool _assignmentPromptHandled;
     private bool _isDeleting;
@@ -435,6 +444,15 @@
         }
 
         await Task.WhenAll(tasks);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldFocusMessageField && _messageTextField is not null)
+        {
+            _shouldFocusMessageField = false;
+            await _messageTextField.FocusAsync();
+        }
     }
 
     private async Task LoadPrioritiesAsync()
@@ -694,6 +712,7 @@
         finally
         {
             _isSendingMessage = false;
+            _shouldFocusMessageField = true;
         }
     }
 
@@ -786,8 +805,13 @@
         _mediaFiles = _mediaFiles.OrderByDescending(existingMediaFile => existingMediaFile.CreatedAt).ToList();
     }
 
-    private async Task SaveAsync()
+    private async Task AutoSaveAsync()
     {
+        if (_isReadOnly || _isSaving)
+        {
+            return;
+        }
+
         _isSaving = true;
 
         try
@@ -816,8 +840,6 @@
                 _editedTicket.OperatorFirstName = assignedOperator?.FirstName;
                 _editedTicket.OperatorLastName = assignedOperator?.LastName;
             }
-
-            _dialogInstance.Close(DialogResult.Ok(_editedTicket));
         }
         catch (HttpRequestException)
         {
@@ -926,11 +948,6 @@
         var firstInitial = firstName.Length == 0 ? string.Empty : firstName[..1];
         var lastInitial = lastName.Length == 0 ? string.Empty : lastName[..1];
         return $"{firstInitial}{lastInitial}".ToUpperInvariant();
-    }
-
-    private void Cancel()
-    {
-        _dialogInstance.Cancel();
     }
 
     public async ValueTask DisposeAsync()
