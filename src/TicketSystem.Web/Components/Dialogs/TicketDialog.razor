@@ -143,7 +143,7 @@
                                         </MudFileUpload>
                                     </ChildContent>
                                 </MudMenu>
-                                <MudTextField T="string" Label="Message" @bind-Value="_newMessage" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="@(_isChatClosed || _isSendingMessage)" Class="flex-grow-1" />
+                                <MudTextField T="string" Label="Message" @bind-Value="_newMessage" Immediate="true" OnKeyDown="HandleMessageKeyDownAsync" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="@(_isChatClosed || _isSendingMessage)" Class="flex-grow-1" />
                                 <MudTooltip Text="Pošalji poruku">
                                     <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || string.IsNullOrWhiteSpace(_newMessage))" aria-label="Pošalji poruku" />
                                 </MudTooltip>
@@ -543,6 +543,14 @@
             await Task.WhenAll(LoadMessagesAsync(), LoadMediaFilesAsync());
             StateHasChanged();
         });
+    }
+
+    private async Task HandleMessageKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" && !args.ShiftKey && !_isChatClosed && !_isSendingMessage && !string.IsNullOrWhiteSpace(_newMessage))
+        {
+            await SendMessageAsync();
+        }
     }
 
     private async Task SendMessageAsync()

@@ -38,12 +38,22 @@
         </AuthorizeView>
         <AuthorizeView>
             <Authorized Context="authenticationState">
-                <MudText Typo="Typo.body2">@authenticationState.User.Identity?.Name</MudText>
-                <MudAvatar Color="Color.Primary" Size="Size.Small"><MudIcon Icon="@Icons.Material.Outlined.Person" /></MudAvatar>
-                <form method="post" action="/auth/logout">
-                    <AntiforgeryToken />
-                    <MudIconButton ButtonType="ButtonType.Submit" Icon="@Icons.Material.Outlined.Logout" Color="Color.Inherit" aria-label="Logout" />
-                </form>
+                <MudMenu @ref="_userAccountMenu" Class="user-account-menu">
+                    <ActivatorContent>
+                        <MudButton Variant="Variant.Text" Color="Color.Inherit" EndIcon="@Icons.Material.Filled.ArrowDropDown" OnClick="@(() => _userAccountMenu!.ToggleMenuAsync(new MouseEventArgs()))">@authenticationState.User.Identity?.Name</MudButton>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MudMenuItem>
+                            <form method="post" action="/auth/logout" class="user-account-logout-form">
+                                <AntiforgeryToken />
+                                <button type="submit" class="user-account-logout-button">
+                                    <MudIcon Icon="@Icons.Material.Outlined.Logout" Size="Size.Small" />
+                                    <span>Logout</span>
+                                </button>
+                            </form>
+                        </MudMenuItem>
+                    </ChildContent>
+                </MudMenu>
             </Authorized>
             <NotAuthorized>
                 <MudButton Href="/login" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@Icons.Material.Outlined.Login">Login</MudButton>
@@ -55,6 +65,21 @@
         @Body
     </MudMainContent>
 </MudLayout>
+
+<style>
+    .user-account-logout-form {
+        margin: 0;
+    }
+
+    .user-account-logout-button {
+        all: unset;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        cursor: pointer;
+    }
+</style>
 
 <div id="blazor-error-ui">
     An unexpected error occurred.
@@ -82,6 +107,8 @@
     }
 
     private bool _isDarkMode => ThemeState.IsDarkMode;
+
+    private MudMenu? _userAccountMenu;
 
     private async Task ToggleDarkModeAsync()
     {
