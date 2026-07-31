@@ -76,7 +76,7 @@
             </MudTabPanel>
 
             <MudTabPanel Text="Conversation" Icon="@Icons.Material.Outlined.Chat">
-                <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="UploadFileAsync" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isUploadingFile)" DragAndDrop="true" @bind-Dragging="_isDraggingFile" Class="ticket-chat-drop-upload">
+                <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="AddPendingFile" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isSendingMessage)" DragAndDrop="true" @bind-Dragging="_isDraggingFile" Class="ticket-chat-drop-upload">
                     <CustomContent Context="dropUpload">
                         <div class="@($"ticket-chat-tab{(_isDraggingFile ? " ticket-chat-drop-active" : string.Empty)}")" @ondragenter="StartFileDragging">
                             @if (_isLoadingMessages)
@@ -88,7 +88,7 @@
                             else
                             {
                                 <div class="ticket-chat-scroll">
-                                    @if (_messages.Count == 0)
+                                    @if (ChatTimeline.Count == 0)
                                     {
                                         <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mud-height-full">
                                             <MudIcon Icon="@Icons.Material.Outlined.Forum" Color="Color.Secondary" Size="Size.Large" />
@@ -98,18 +98,38 @@
                                     else
                                     {
                                         <MudStack Spacing="2">
-                                            @foreach (var message in _messages)
+                                            @foreach (var entry in ChatTimeline)
                                             {
-                                                <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
-                                                    <MudAvatar Color="Color.Primary" Size="Size.Medium">@GetMessageSenderInitials(message)</MudAvatar>
-                                                    <MudPaper Outlined="true" Class="pa-3 flex-grow-1">
-                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
-                                                            <MudText Typo="Typo.subtitle2">@GetMessageSenderName(message)</MudText>
-                                                            <MudText Typo="Typo.caption">@message.SentAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                                                        </MudStack>
-                                                        <MudText Typo="Typo.body2" Class="ticket-message-content">@message.Content</MudText>
-                                                    </MudPaper>
-                                                </MudStack>
+                                                @if (entry.Message is not null)
+                                                {
+                                                    <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+                                                        <MudAvatar Color="Color.Primary" Size="Size.Medium">@GetMessageSenderInitials(entry.Message)</MudAvatar>
+                                                        <MudPaper Outlined="true" Class="pa-3 flex-grow-1">
+                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+                                                                <MudText Typo="Typo.subtitle2">@GetMessageSenderName(entry.Message)</MudText>
+                                                                <MudText Typo="Typo.caption">@entry.Message.SentAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                                                            </MudStack>
+                                                            <MudText Typo="Typo.body2" Class="ticket-message-content">@entry.Message.Content</MudText>
+                                                        </MudPaper>
+                                                    </MudStack>
+                                                }
+                                                else if (entry.MediaFile is not null)
+                                                {
+                                                    <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
+                                                        <MudAvatar Color="Color.Primary" Size="Size.Medium">@GetMediaUploaderInitials(entry.MediaFile)</MudAvatar>
+                                                        <MudPaper Outlined="true" Class="pa-3 flex-grow-1">
+                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+                                                                <MudText Typo="Typo.subtitle2">@GetMediaUploaderName(entry.MediaFile)</MudText>
+                                                                <MudText Typo="Typo.caption">@entry.MediaFile.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                                                            </MudStack>
+                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
+                                                                <MudIcon Icon="@Icons.Material.Outlined.Description" Color="Color.Primary" />
+                                                                <MudText Typo="Typo.body2" Class="flex-grow-1">@GetMediaFileName(entry.MediaFile)</MudText>
+                                                                <MudIconButton Icon="@Icons.Material.Outlined.Download" Color="Color.Primary" Href="@GetMediaDownloadUrl(entry.MediaFile)" aria-label="Download file" />
+                                                            </MudStack>
+                                                        </MudPaper>
+                                                    </MudStack>
+                                                }
                                             }
                                         </MudStack>
                                     }
@@ -121,23 +141,41 @@
                                 <MudAlert Severity="Severity.Info" Variant="Variant.Text" Dense="true">Reopen the ticket to continue the conversation.</MudAlert>
                             }
 
+                            @if (_pendingFiles.Count > 0)
+                            {
+                                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" Class="px-3 pt-2">
+                                    @foreach (var pendingFile in _pendingFiles)
+                                    {
+                                        <MudPaper Outlined="true" Class="pa-3 ticket-pending-file-card">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Class="ticket-pending-file-close" OnClick="@(() => RemovePendingFile(pendingFile))" Disabled="@_isSendingMessage" aria-label="Remove file" />
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                                <MudIcon Icon="@Icons.Material.Outlined.InsertDriveFile" Color="Color.Primary" Size="Size.Large" />
+                                                <MudStack Spacing="0">
+                                                    <MudText Typo="Typo.body2" Class="ticket-pending-file-name">@pendingFile.Name</MudText>
+                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@GetPendingFileTypeLabel(pendingFile) · @FormatFileSize(pendingFile.Size)</MudText>
+                                                </MudStack>
+                                            </MudStack>
+                                        </MudPaper>
+                                    }
+                                </MudStack>
+                            }
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="pa-3">
                                 <MudMenu Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomLeft">
                                     <ActivatorContent>
                                         <MudTooltip Text="Dodaj privitak">
-                                            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@context.ToggleAsync" Disabled="@(_isChatClosed || _isUploadingFile)" aria-label="Dodaj privitak" />
+                                            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@context.ToggleAsync" Disabled="@(_isChatClosed || _isSendingMessage)" aria-label="Dodaj privitak" />
                                         </MudTooltip>
                                     </ActivatorContent>
                                     <ChildContent>
-                                        <MudFileUpload T="IBrowserFile" Accept=".png,.jpg,.jpeg" FilesChanged="UploadFileAsync" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isUploadingFile)" capture="environment">
+                                        <MudFileUpload T="IBrowserFile" Accept=".png,.jpg,.jpeg" FilesChanged="AddPendingFile" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isSendingMessage)" capture="environment">
                                             <CustomContent Context="cameraUpload">
-                                                <MudMenuItem Icon="@Icons.Material.Outlined.PhotoCamera" OnClick="@cameraUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isUploadingFile)">Kamera</MudMenuItem>
+                                                <MudMenuItem Icon="@Icons.Material.Outlined.PhotoCamera" OnClick="@cameraUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isSendingMessage)">Kamera</MudMenuItem>
                                             </CustomContent>
                                             <SelectedTemplate></SelectedTemplate>
                                         </MudFileUpload>
-                                        <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="UploadFileAsync" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isUploadingFile)">
+                                        <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="AddPendingFile" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isSendingMessage)">
                                             <CustomContent Context="deviceUpload">
-                                                <MudMenuItem Icon="@Icons.Material.Outlined.AttachFile" OnClick="@deviceUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isUploadingFile)">Datoteka s uređaja</MudMenuItem>
+                                                <MudMenuItem Icon="@Icons.Material.Outlined.AttachFile" OnClick="@deviceUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isSendingMessage)">Datoteka s uređaja</MudMenuItem>
                                             </CustomContent>
                                             <SelectedTemplate></SelectedTemplate>
                                         </MudFileUpload>
@@ -145,7 +183,7 @@
                                 </MudMenu>
                                 <MudTextField T="string" Label="Message" @bind-Value="_newMessage" Immediate="true" OnKeyDown="HandleMessageKeyDownAsync" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="@(_isChatClosed || _isSendingMessage)" Class="flex-grow-1" />
                                 <MudTooltip Text="Pošalji poruku">
-                                    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || string.IsNullOrWhiteSpace(_newMessage))" aria-label="Pošalji poruku" />
+                                    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || (string.IsNullOrWhiteSpace(_newMessage) && _pendingFiles.Count == 0))" aria-label="Pošalji poruku" />
                                 </MudTooltip>
                             </MudStack>
 
@@ -275,6 +313,22 @@
         overflow-wrap: anywhere;
         white-space: pre-wrap;
     }
+
+    .ticket-pending-file-card {
+        min-width: 220px;
+        position: relative;
+    }
+
+    .ticket-pending-file-close {
+        position: absolute;
+        right: 4px;
+        top: 4px;
+    }
+
+    .ticket-pending-file-name {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
 </style>
 
 @code {
@@ -331,6 +385,7 @@
     private List<TicketPriorityDTO> _priorities = [];
     private List<MessagePOCO> _messages = [];
     private List<MediaFilePOCO> _mediaFiles = [];
+    private List<IBrowserFile> _pendingFiles = [];
     private HubConnection? _chatHubConnection;
     private IDisposable? _chatChangedSubscription;
     private string _newMessage = string.Empty;
@@ -343,14 +398,21 @@
     private bool _isLoadingPriorities = true;
     private bool _isSaving;
     private bool _isSendingMessage;
-    private bool _isUploadingFile;
     private bool _isDraggingFile;
 
     private bool _isChatClosed => _editedTicket.StatusId == TicketStatusOptions.ClosedId;
 
+    private IReadOnlyList<ChatTimelineEntry> ChatTimeline => _messages
+        .Select(message => new ChatTimelineEntry(message.SentAt, message, null))
+        .Concat(_mediaFiles.Select(mediaFile => new ChatTimelineEntry(mediaFile.CreatedAt, null, mediaFile)))
+        .OrderBy(entry => entry.Timestamp)
+        .ToList();
+
+    private sealed record ChatTimelineEntry(DateTimeOffset Timestamp, MessagePOCO? Message, MediaFilePOCO? MediaFile);
+
     private void StartFileDragging()
     {
-        if (!_isChatClosed && !_isUploadingFile)
+        if (!_isChatClosed && !_isSendingMessage)
         {
             _isDraggingFile = true;
         }
@@ -547,50 +609,13 @@
 
     private async Task HandleMessageKeyDownAsync(KeyboardEventArgs args)
     {
-        if (args.Key == "Enter" && !args.ShiftKey && !_isChatClosed && !_isSendingMessage && !string.IsNullOrWhiteSpace(_newMessage))
+        if (args.Key == "Enter" && !args.ShiftKey && !_isChatClosed && !_isSendingMessage && (!string.IsNullOrWhiteSpace(_newMessage) || _pendingFiles.Count > 0))
         {
             await SendMessageAsync();
         }
     }
 
-    private async Task SendMessageAsync()
-    {
-        var messageContent = _newMessage.Trim();
-        if (messageContent.Length == 0)
-        {
-            return;
-        }
-
-        _isSendingMessage = true;
-
-        try
-        {
-            var assignToCurrentUser = await GetAssignToCurrentUserAsync();
-            using var response = await ApiClient.PostAsJsonAsync($"api/tickets/{_editedTicket.Id}/chat/messages", new
-            {
-                Content = messageContent,
-                AssignToCurrentUser = assignToCurrentUser
-            });
-            response.EnsureSuccessStatusCode();
-
-            var message = await response.Content.ReadFromJsonAsync<MessagePOCO>()
-                ?? throw new JsonException("The API returned an empty message response.");
-            UpsertMessage(message);
-            _editedTicket.ChatSessionId = message.ChatSessionId;
-            _newMessage = string.Empty;
-            ApplyCurrentUserAssignment(assignToCurrentUser);
-        }
-        catch (Exception exception) when (exception is HttpRequestException or JsonException or TaskCanceledException)
-        {
-            Snackbar.Add("Message could not be sent.", Severity.Error);
-        }
-        finally
-        {
-            _isSendingMessage = false;
-        }
-    }
-
-    private async Task UploadFileAsync(IBrowserFile? file)
+    private void AddPendingFile(IBrowserFile? file)
     {
         if (file is null)
         {
@@ -610,11 +635,72 @@
             return;
         }
 
-        _isUploadingFile = true;
+        _pendingFiles.Add(file);
+    }
+
+    private void RemovePendingFile(IBrowserFile file)
+    {
+        _pendingFiles.Remove(file);
+    }
+
+    private static string GetPendingFileTypeLabel(IBrowserFile file)
+    {
+        return Path.GetExtension(file.Name).TrimStart('.').ToUpperInvariant();
+    }
+
+    private async Task SendMessageAsync()
+    {
+        var messageContent = _newMessage.Trim();
+        if (messageContent.Length == 0 && _pendingFiles.Count == 0)
+        {
+            return;
+        }
+
+        _isSendingMessage = true;
 
         try
         {
             var assignToCurrentUser = await GetAssignToCurrentUserAsync();
+
+            if (messageContent.Length > 0)
+            {
+                using var response = await ApiClient.PostAsJsonAsync($"api/tickets/{_editedTicket.Id}/chat/messages", new
+                {
+                    Content = messageContent,
+                    AssignToCurrentUser = assignToCurrentUser
+                });
+                response.EnsureSuccessStatusCode();
+
+                var message = await response.Content.ReadFromJsonAsync<MessagePOCO>()
+                    ?? throw new JsonException("The API returned an empty message response.");
+                UpsertMessage(message);
+                _editedTicket.ChatSessionId = message.ChatSessionId;
+                _newMessage = string.Empty;
+            }
+
+            var filesToSend = _pendingFiles.ToList();
+            _pendingFiles.Clear();
+            foreach (var file in filesToSend)
+            {
+                await UploadFileAsync(file, assignToCurrentUser);
+            }
+
+            ApplyCurrentUserAssignment(assignToCurrentUser);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or JsonException or TaskCanceledException)
+        {
+            Snackbar.Add("Message could not be sent.", Severity.Error);
+        }
+        finally
+        {
+            _isSendingMessage = false;
+        }
+    }
+
+    private async Task UploadFileAsync(IBrowserFile file, bool assignToCurrentUser)
+    {
+        try
+        {
             await using var stream = file.OpenReadStream(MaximumMediaFileSize);
             using var fileContent = new StreamContent(stream);
             using var content = new MultipartFormDataContent();
@@ -628,15 +714,10 @@
                 ?? throw new JsonException("The API returned an empty media response.");
             UpsertMediaFile(mediaFile);
             _editedTicket.ChatSessionId = mediaFile.ChatSessionId;
-            ApplyCurrentUserAssignment(assignToCurrentUser);
         }
         catch (Exception exception) when (exception is HttpRequestException or IOException or JsonException or TaskCanceledException)
         {
-            Snackbar.Add("File could not be uploaded.", Severity.Error);
-        }
-        finally
-        {
-            _isUploadingFile = false;
+            Snackbar.Add($"File '{file.Name}' could not be uploaded.", Severity.Error);
         }
     }
 
@@ -816,6 +897,11 @@
     private static string GetMediaUploaderName(MediaFilePOCO mediaFile)
     {
         return $"{mediaFile.UploaderFirstName} {mediaFile.UploaderLastName}";
+    }
+
+    private static string GetMediaUploaderInitials(MediaFilePOCO mediaFile)
+    {
+        return GetInitials(mediaFile.UploaderFirstName, mediaFile.UploaderLastName);
     }
 
     private static string GetMediaFileName(MediaFilePOCO mediaFile)
