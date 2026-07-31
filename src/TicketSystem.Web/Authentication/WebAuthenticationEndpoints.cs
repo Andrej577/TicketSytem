@@ -27,7 +27,7 @@ public static class WebAuthenticationEndpoints
         endpoints.MapPost("/auth/quick-login", QuickLoginAsync)
             .AllowAnonymous()
             .WithMetadata(new RequireAntiforgeryTokenAttribute(true));
-        endpoints.MapPost("/auth/logout", LogoutAsync)
+        endpoints.MapPost("/auth/logout", (Delegate)LogoutAsync)
             .RequireAuthorization()
             .WithMetadata(new RequireAntiforgeryTokenAttribute(true));
 
