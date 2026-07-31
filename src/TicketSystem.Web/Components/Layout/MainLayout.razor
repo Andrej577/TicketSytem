@@ -3,7 +3,7 @@
 @inject ThemeState ThemeState
 @inject IJSRuntime JSRuntime
 
-<MudThemeProvider IsDarkMode="@ThemeState.IsDarkMode" ObserveSystemDarkModeChange="false" />
+<MudThemeProvider Theme="_theme" IsDarkMode="@ThemeState.IsDarkMode" ObserveSystemDarkModeChange="false" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -109,6 +109,18 @@
     private bool _isDarkMode => ThemeState.IsDarkMode;
 
     private MudMenu? _userAccountMenu;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Secondary = "#0288D1"
+        },
+        PaletteDark = new PaletteDark
+        {
+            Secondary = "#29B6F6"
+        }
+    };
 
     private async Task ToggleDarkModeAsync()
     {

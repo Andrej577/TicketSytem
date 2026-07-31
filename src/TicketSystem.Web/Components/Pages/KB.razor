@@ -104,7 +104,7 @@
                     <MudPaper Outlined="true" Class="pa-8">
                         <MudStack AlignItems="AlignItems.Center" Spacing="2">
                             <MudIcon Icon="@(_articles.Count == 0 ? Icons.Material.Outlined.MenuBook : Icons.Material.Outlined.SearchOff)" Size="Size.Large" Color="Color.Primary" />
-                            <MudText Typo="Typo.h6">@(_articles.Count == 0 ? "No knowledge articles yet" : "No matching articles")</MudText>
+                            <MudText Typo="Typo.h6">@(_articles.Count == 0 ? "No knowledge articles" : "No matching articles")</MudText>
                             <MudText Typo="Typo.body2" Color="Color.Secondary">
                                 @(_articles.Count == 0 ? "Create the first article for your support team." : "Clear or change the filters to see more articles.")
                             </MudText>
