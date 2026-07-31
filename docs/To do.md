@@ -11,11 +11,12 @@
 12. Chat mora imat preview graficke datoteke (slike itd)
 13. Ako se dropa datoteka u chat neka bude kao lista datoteka koje su spremne za slanje i kada se pošalju neka poruka ima naziv datotkee i opciju za dowload - nije gotovo još
 14. bug ako se radi s datotekama (download) onda na refreshu ticket page-a opet nudi dowload
-15. Gsap animacije? Cisto vidjeti pa nekako ugurati koju animaciju da se dobije osjećaj za framework, ne treba biti vatromet al cisto da vidimo kako se ponaša u real aplikacijama
-16. Staviti aplikaciju na sustav metrike, dali postoje operacije koje se vrte u petlji i opterećuju bazu
-17. Provjeriti migracijsku datoteku i dali svi pozivi u bazu podataka imaju smisla
-18. Napraviti request i response objekte koje cemo slati i primati s APIja, ovako imamo prevelike argumente u funkcijama koji se odnose na isti objekt
-19. Provjeriti šta znače oni SignalR eventi, koliko ja znam oni nebi trebali niti postojati (nisam siguran)
-20. Priprema za deploy (micanje tesnih usera s logina?)
-21. Maknuti layout inspo iz readme.md-a i mozda jos nabrijat tehničkim stvarima
-22. Tu imamo ludorije s dockerima i treba napraviti jedan dobar za deploy
+15. Fix delete buttona na ticket dialogu
+16. Gsap animacije? Cisto vidjeti pa nekako ugurati koju animaciju da se dobije osjećaj za framework, ne treba biti vatromet al cisto da vidimo kako se ponaša u real aplikacijama
+17. Staviti aplikaciju na sustav metrike, dali postoje operacije koje se vrte u petlji i opterećuju bazu
+18. Provjeriti migracijsku datoteku i dali svi pozivi u bazu podataka imaju smisla
+19. Napraviti request i response objekte koje cemo slati i primati s APIja, ovako imamo prevelike argumente u funkcijama koji se odnose na isti objekt
+20. Provjeriti šta znače oni SignalR eventi, koliko ja znam oni nebi trebali niti postojati (nisam siguran)
+21. Priprema za deploy (micanje tesnih usera s logina?)
+22. Maknuti layout inspo iz readme.md-a i mozda jos nabrijat tehničkim stvarima
+23. Tu imamo ludorije s dockerima i treba napraviti jedan dobar za deploy
