@@ -41,7 +41,7 @@
             <div class="dashboard-row">
                 <div class="dashboard-cell">
                     <MudPaper Class="pa-4 dashboard-card">
-                        <DashboardCardHeader Title="Recent activity" Subtitle="Latest events" />
+                        <DashboardCardHeader Typo="Typo.h6" Title="Recent activity" />
                         <MudDivider Class="my-4" />
                         <div class="dashboard-card-body">
                             @if (_dashboard is null || _dashboard.RecentActivity.Count == 0)
@@ -66,7 +66,7 @@
 
                 <div class="dashboard-cell">
                     <MudPaper Class="pa-4 dashboard-card">
-                        <DashboardCardHeader Title="Ticket overview" Subtitle="Statuses and priorities" />
+                        <DashboardCardHeader Typo="Typo.h6" Title="Ticket overview" />
                         <MudDivider Class="my-4" />
                         <div class="dashboard-card-body">
                             @if (_dashboard is null || _dashboard.TicketsByStatus.Sum(status => status.Count) == 0)
@@ -86,7 +86,7 @@
 
                 <div class="dashboard-cell dashboard-cell-stacked">
                     <MudPaper Class="pa-4 dashboard-card">
-                        <DashboardCardHeader Title="Summary" Subtitle="Key indicators" />
+                        <DashboardCardHeader Typo="Typo.h6" Title="Summary" />
                         <MudDivider Class="my-4" />
                         <div class="dashboard-card-body">
                             @if (_dashboard is null)
@@ -122,7 +122,7 @@
                     </MudPaper>
 
                     <MudPaper Class="pa-4 dashboard-card">
-                        <DashboardCardHeader Title="First response time" Subtitle="Response time trend" />
+                        <DashboardCardHeader Typo="Typo.h6" Title="First response time" />
                         <MudDivider Class="my-4" />
                         <div class="dashboard-card-body">
                             @if (_dashboard is null || _dashboard.FirstResponseTrend.Count == 0)

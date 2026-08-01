@@ -13,8 +13,8 @@
         <MudText Typo="Typo.h6">Ticket #@_editedTicket.TicketNumber</MudText>
     </TitleContent>
     <DialogContent>
-        <div class="ticket-tabs-header">
-            <MudTabs KeepPanelsAlive="true" Rounded="true" ApplyEffectsToContainer="true">
+        <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1" Class="ticket-tabs-header">
+            <MudTabs KeepPanelsAlive="true" Rounded="true" ApplyEffectsToContainer="true" Class="flex-grow-1">
             <MudTabPanel Text="Details" Icon="@Icons.Material.Outlined.Info">
                 <div class="ticket-details-tab">
                     <MudStack Spacing="3">
@@ -249,22 +249,15 @@
             {
                 <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)" Class="ticket-delete-button">Delete</MudButton>
             }
-        </div>
+        </MudStack>
     </DialogContent>
 </MudDialog>
 
 <style>
-    .ticket-tabs-header {
-        position: relative;
-    }
-
     .ticket-delete-button {
-        bottom: 0;
+        flex-shrink: 0;
         height: 36px;
-        margin: auto 0;
-        position: absolute;
-        right: 0;
-        top: 0;
+        margin-top: 8px;
     }
 
     .ticket-details-tab {
