@@ -179,7 +179,7 @@
                                         </MudFileUpload>
                                         <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="AddPendingFile" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isSendingMessage)">
                                             <CustomContent Context="deviceUpload">
-                                                <MudMenuItem Icon="@Icons.Material.Outlined.AttachFile" OnClick="@deviceUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isSendingMessage)">Datoteka s uređaja</MudMenuItem>
+                                                <MudMenuItem Icon="@_attachmentIcon" OnClick="@deviceUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isSendingMessage)">Datoteka s uređaja</MudMenuItem>
                                             </CustomContent>
                                             <SelectedTemplate></SelectedTemplate>
                                         </MudFileUpload>
@@ -187,7 +187,7 @@
                                 </MudMenu>
                                 <MudTextField @ref="_messageTextField" T="string" Label="Message" @bind-Value="_newMessage" Immediate="true" OnKeyDown="HandleMessageKeyDownAsync" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="_isChatClosed" Class="flex-grow-1" />
                                 <MudTooltip Text="Pošalji poruku">
-                                    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || (string.IsNullOrWhiteSpace(_newMessage) && _pendingFiles.Count == 0))" aria-label="Pošalji poruku" />
+                                    <MudFab Color="Color.Primary" StartIcon="@_sendIcon" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || (string.IsNullOrWhiteSpace(_newMessage) && _pendingFiles.Count == 0))" aria-label="Pošalji poruku" />
                                 </MudTooltip>
                             </MudStack>
 
@@ -204,7 +204,7 @@
                 </MudFileUpload>
             </MudTabPanel>
 
-            <MudTabPanel Text="Media files" Icon="@Icons.Material.Outlined.AttachFile">
+            <MudTabPanel Text="Media files" Icon="@_attachmentIcon">
                 <div class="ticket-chat-tab">
                     @if (_isLoadingMediaFiles)
                     {
@@ -247,7 +247,7 @@
             </MudTabs>
             @if (_canDelete)
             {
-                <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)" Class="ticket-delete-button">Delete</MudButton>
+                <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@_deleteIcon" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)" Class="ticket-delete-button">Delete</MudButton>
             }
         </MudStack>
     </DialogContent>
@@ -332,6 +332,12 @@
 </style>
 
 @code {
+    private const string _sendIcon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"><path d="M1.444,6.669a2,2,0,0,0-.865,3.337l3.412,3.408V20h6.593l3.435,3.43a1.987,1.987,0,0,0,1.408.588,2.034,2.034,0,0,0,.51-.066,1.978,1.978,0,0,0,1.42-1.379L23.991.021ZM2,8.592l17.028-5.02L5.993,16.586v-4Zm13.44,13.424L11.413,18h-4L20.446,4.978Z"></path></svg>""";
+
+    private const string _deleteIcon = """<svg xmlns="http://www.w3.org/2000/svg" id="Isolation_Mode" viewBox="0 0 24 24" width="1em" height="1em"><path d="M23,3H18V2.5A2.5,2.5,0,0,0,15.5,0h-7A2.5,2.5,0,0,0,6,2.5V3H1V6H3V21a3,3,0,0,0,3,3H18a3,3,0,0,0,3-3V6h2ZM18,21H6V6H18Z"></path><rect x="8" y="9" width="3" height="9"></rect><rect x="13" y="9" width="3" height="9"></rect></svg>""";
+
+    private const string _attachmentIcon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"><path d="M6.983,24.007A7,7,0,0,1,2.02,12.054l10.6-10.585a5.008,5.008,0,0,1,7.091,7.075L9.11,19.128a3.083,3.083,0,0,1-4.254,0,3,3,0,0,1,0-4.245L14.75,5.007l1.418,1.415L6.274,16.3a1,1,0,0,0,0,1.414,1.027,1.027,0,0,0,1.418,0L18.3,7.129a3.005,3.005,0,1,0-4.255-4.245L3.438,13.468a5.008,5.008,0,0,0,7.09,7.076l12.021-12,1.418,1.415-12.021,12A7,7,0,0,1,6.983,24.007Z"></path></svg>""";
+
     private const long MaximumMediaFileSize = 10 * 1024 * 1024;
     private const string AllowedMediaExtensions = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
 

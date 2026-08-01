@@ -11,6 +11,9 @@
 @inject ISnackbar Snackbar
 
 <PageTitle>Tickets | Ticket System</PageTitle>
+<HeadContent>
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-straight/css/uicons-regular-straight.css" />
+</HeadContent>
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-4 tickets-page">
     <MudStack Spacing="3" Class="tickets-page-content">
@@ -19,7 +22,7 @@
 
             @if (_isCustomer)
             {
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Add" OnClick="OpenCreateTicketDialogAsync">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@_newIcon" OnClick="OpenCreateTicketDialogAsync">
                     New ticket
                 </MudButton>
             }
@@ -70,7 +73,7 @@
                                                  Class="mud-paper mud-paper-rounded mud-paper-outlined pa-3 flex-grow-1 border-2 border-solid mud-border-lines-default kanban-drop-zone">
                                         <div class="kanban-column-header">
                                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
-                                                <MudChip T="string" Color="@status.Color" Variant="Variant.Filled" Size="Size.Small">@status.Name</MudChip>
+                                                <MudText Typo="Typo.h6" Color="@status.Color">@status.Name</MudText>
                                                 <MudText Typo="Typo.caption">@GetTicketCountText(status.Id)</MudText>
                                             </MudStack>
                                             <MudDivider Class="mb-1" />
@@ -89,6 +92,8 @@
                         <MudCard Outlined="true" Class="mt-3" Style="cursor: pointer;" @onclick="@(() => OpenTicketDialogAsync(ticket))">
                             <MudCardContent>
                                 <MudStack Spacing="2">
+                                    <MudText Typo="Typo.subtitle2">#@ticket.TicketNumber</MudText>
+                                    <MudText Typo="Typo.subtitle1"><strong>@ticket.Title</strong></MudText>
                                     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                         <MudChip T="string" Color="@TicketPriorityColorMapper.GetColor(ticket.PriorityImpact)" Variant="Variant.Outlined" Size="Size.Small" Class="ml-0">@ticket.PriorityDisplayName</MudChip>
                                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
@@ -99,8 +104,6 @@
                                             <MudText Typo="Typo.caption">@ticket.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
                                         </MudStack>
                                     </MudStack>
-                                    <MudText Typo="Typo.subtitle2">#@ticket.TicketNumber</MudText>
-                                    <MudText Typo="Typo.subtitle1"><strong>@ticket.Title</strong></MudText>
                                 </MudStack>
                             </MudCardContent>
                         </MudCard>
@@ -161,6 +164,8 @@
 </style>
 
 @code {
+    private const string _newIcon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"><path d="m14.414 0h-9.414a3 3 0 0 0 -3 3v21h20v-16.414zm.586 3.414 3.586 3.586h-3.586zm-11 18.586v-19a1 1 0 0 1 1-1h8v7h7v13zm9-8h3v2h-3v3h-2v-3h-3v-2h3v-3h2z"></path></svg>""";
+
     [CascadingParameter]
     private Task<AuthenticationState> _authenticationState { get; set; } = default!;
 

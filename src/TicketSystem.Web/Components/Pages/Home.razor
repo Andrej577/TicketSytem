@@ -9,22 +9,30 @@
 @inject ISnackbar Snackbar
 
 <PageTitle>Dashboard | Ticket System</PageTitle>
+<HeadContent>
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-straight/css/uicons-regular-straight.css" />
+</HeadContent>
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-4 dashboard-page">
     <MudStack Spacing="3" Class="dashboard-page-content">
-        <MudText Typo="Typo.h4">Dashboard</MudText>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.h4">Dashboard</MudText>
 
-        <MudPaper Class="pa-4" aria-label="Dashboard filters">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                <MudText Typo="Typo.overline">Period</MudText>
-                <MudDateRangePicker Label="Date range" @bind-DateRange="_dateRange" @bind-DateRange:after="LoadDashboardAsync" Variant="Variant.Outlined" Margin="Margin.Dense" Style="width: 280px;" />
-                <MudSpacer />
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" aria-label="Dashboard filters">
+                <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" OverrideStyles="false">
+                    <MudButton Variant="@(IsSevenDayPreset ? Variant.Filled : Variant.Outlined)" Color="@(IsSevenDayPreset ? Color.Primary : Color.Default)" OnClick="@(() => ApplyPresetDaysAsync(7))">7 days</MudButton>
+                    <MudButton Variant="@(IsTwentyEightDayPreset ? Variant.Filled : Variant.Outlined)" Color="@(IsTwentyEightDayPreset ? Color.Primary : Color.Default)" OnClick="@(() => ApplyPresetDaysAsync(28))">28 days</MudButton>
+                    <MudButton Variant="@(IsThreeMonthPreset ? Variant.Filled : Variant.Outlined)" Color="@(IsThreeMonthPreset ? Color.Primary : Color.Default)" OnClick="@(() => ApplyPresetMonthsAsync(3))">3 months</MudButton>
+                </MudButtonGroup>
+                <MudIconButton Icon="@Icons.Material.Outlined.ChevronLeft" Size="Size.Small" OnClick="@(() => ShiftMonthAsync(-1))" aria-label="Previous month" />
+                <MudDateRangePicker Label="Date range" @bind-DateRange="_dateRange" @bind-DateRange:after="LoadDashboardAsync" Variant="@(IsCustomRange ? Variant.Filled : Variant.Outlined)" Color="@(IsCustomRange ? Color.Primary : Color.Default)" Margin="Margin.Dense" Style="width: 280px;" AdornmentIcon="@_calendarIcon" />
+                <MudIconButton Icon="@Icons.Material.Outlined.ChevronRight" Size="Size.Small" OnClick="@(() => ShiftMonthAsync(1))" aria-label="Next month" />
                 @if (_isLoading)
                 {
                     <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
                 }
             </MudStack>
-        </MudPaper>
+        </MudStack>
 
         @if (!string.IsNullOrWhiteSpace(_loadErrorMessage))
         {
@@ -352,6 +360,36 @@
             await LoadDashboardAsync();
             StateHasChanged();
         });
+    }
+
+    private const string _calendarIcon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"><path d="M21,2H18V0H16V2H8V0H6V2H3A3,3,0,0,0,0,5V24H24V5A3,3,0,0,0,21,2ZM2,5A1,1,0,0,1,3,4H21a1,1,0,0,1,1,1V8H2ZM2,22V10H22V22Z"></path><rect x="15" y="13" width="2" height="2"></rect><rect x="11" y="13" width="2" height="2"></rect><rect x="7" y="13" width="2" height="2"></rect><rect x="15" y="17" width="2" height="2"></rect><rect x="11" y="17" width="2" height="2"></rect><rect x="7" y="17" width="2" height="2"></rect></svg>""";
+
+    private bool IsSevenDayPreset => _dateRange.Start?.Date == DateTime.Today.AddDays(-7) && _dateRange.End?.Date == DateTime.Today;
+
+    private bool IsTwentyEightDayPreset => _dateRange.Start?.Date == DateTime.Today.AddDays(-28) && _dateRange.End?.Date == DateTime.Today;
+
+    private bool IsThreeMonthPreset => _dateRange.Start?.Date == DateTime.Today.AddMonths(-3) && _dateRange.End?.Date == DateTime.Today;
+
+    private bool IsCustomRange => !IsSevenDayPreset && !IsTwentyEightDayPreset && !IsThreeMonthPreset;
+
+    private async Task ApplyPresetDaysAsync(int days)
+    {
+        _dateRange = new DateRange(DateTime.Today.AddDays(-days), DateTime.Today);
+        await LoadDashboardAsync();
+    }
+
+    private async Task ApplyPresetMonthsAsync(int months)
+    {
+        _dateRange = new DateRange(DateTime.Today.AddMonths(-months), DateTime.Today);
+        await LoadDashboardAsync();
+    }
+
+    private async Task ShiftMonthAsync(int months)
+    {
+        var start = (_dateRange.Start ?? DateTime.Today).AddMonths(months);
+        var end = (_dateRange.End ?? DateTime.Today).AddMonths(months);
+        _dateRange = new DateRange(start, end);
+        await LoadDashboardAsync();
     }
 
     private async Task LoadDashboardAsync()
