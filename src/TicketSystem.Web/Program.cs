@@ -12,6 +12,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
 builder.Services.AddScoped<ThemeState>();
+builder.Services.AddScoped<LoadingState>();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

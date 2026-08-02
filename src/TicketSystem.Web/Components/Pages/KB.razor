@@ -9,6 +9,7 @@
 @inject TicketSystemApiClient ApiClient
 @inject IConfiguration Configuration
 @inject ISnackbar Snackbar
+@inject LoadingState LoadingState
 
 <PageTitle>Knowledge base | Ticket System</PageTitle>
 
@@ -78,90 +79,80 @@
                 </MudStack>
             </MudPaper>
 
-            @if (_isLoading)
-            {
-                <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-8">
-                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                    <MudText Typo="Typo.body2">Loading knowledge articles...</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.subtitle2">@_visibleArticleTotalText</MudText>
+                <MudStack Row="true" Spacing="1">
+                    @foreach (var status in _statuses)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@KnowledgeStatusColorMapper.GetColor(status.Id)">
+                            @status.Name: @_articles.Count(article => article.StatusId == status.Id)
+                        </MudChip>
+                    }
                 </MudStack>
+            </MudStack>
+
+            @if (_visibleArticles.Count == 0)
+            {
+                <MudPaper Outlined="true" Class="pa-8">
+                    <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@(_articles.Count == 0 ? Icons.Material.Outlined.MenuBook : Icons.Material.Outlined.SearchOff)" Size="Size.Large" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6">@(_articles.Count == 0 ? "No knowledge articles" : "No matching articles")</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @(_articles.Count == 0 ? "Create the first article for your support team." : "Clear or change the filters to see more articles.")
+                        </MudText>
+                        @if (_articles.Count == 0)
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Add" OnClick="@(() => OpenKnowledgeDialogAsync(null))" Disabled="@(_statuses.Count == 0)">
+                                Create article
+                            </MudButton>
+                        }
+                        else
+                        {
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.FilterAltOff" OnClick="ClearFilters">
+                                Clear filters
+                            </MudButton>
+                        }
+                    </MudStack>
+                </MudPaper>
             }
             else
             {
-                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                    <MudText Typo="Typo.subtitle2">@_visibleArticleTotalText</MudText>
-                    <MudStack Row="true" Spacing="1">
-                        @foreach (var status in _statuses)
-                        {
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@KnowledgeStatusColorMapper.GetColor(status.Id)">
-                                @status.Name: @_articles.Count(article => article.StatusId == status.Id)
-                            </MudChip>
-                        }
-                    </MudStack>
-                </MudStack>
+                <MudGrid Spacing="3">
+                    @foreach (var article in _visibleArticles)
+                    {
+                        <MudItem xs="12" sm="6" lg="4">
+                            <MudCard Outlined="true" Style="height: 100%; cursor: pointer;" @onclick="@(() => OpenKnowledgeDialogAsync(article))">
+                                <MudCardContent>
+                                    <MudStack Spacing="2">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                            <MudChip T="string" Size="Size.Small" Color="@KnowledgeStatusColorMapper.GetColor(article.StatusId)">
+                                                @article.StatusName
+                                            </MudChip>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @article.UpdatedAt.ToString("dd MMM yyyy", CultureInfo.InvariantCulture)
+                                            </MudText>
+                                        </MudStack>
 
-                @if (_visibleArticles.Count == 0)
-                {
-                    <MudPaper Outlined="true" Class="pa-8">
-                        <MudStack AlignItems="AlignItems.Center" Spacing="2">
-                            <MudIcon Icon="@(_articles.Count == 0 ? Icons.Material.Outlined.MenuBook : Icons.Material.Outlined.SearchOff)" Size="Size.Large" Color="Color.Primary" />
-                            <MudText Typo="Typo.h6">@(_articles.Count == 0 ? "No knowledge articles" : "No matching articles")</MudText>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                @(_articles.Count == 0 ? "Create the first article for your support team." : "Clear or change the filters to see more articles.")
-                            </MudText>
-                            @if (_articles.Count == 0)
-                            {
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.Add" OnClick="@(() => OpenKnowledgeDialogAsync(null))" Disabled="@(_statuses.Count == 0)">
-                                    Create article
-                                </MudButton>
-                            }
-                            else
-                            {
-                                <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Outlined.FilterAltOff" OnClick="ClearFilters">
-                                    Clear filters
-                                </MudButton>
-                            }
-                        </MudStack>
-                    </MudPaper>
-                }
-                else
-                {
-                    <MudGrid Spacing="3">
-                        @foreach (var article in _visibleArticles)
-                        {
-                            <MudItem xs="12" sm="6" lg="4">
-                                <MudCard Outlined="true" Style="height: 100%; cursor: pointer;" @onclick="@(() => OpenKnowledgeDialogAsync(article))">
-                                    <MudCardContent>
-                                        <MudStack Spacing="2">
-                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                                <MudChip T="string" Size="Size.Small" Color="@KnowledgeStatusColorMapper.GetColor(article.StatusId)">
-                                                    @article.StatusName
-                                                </MudChip>
-                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                    @article.UpdatedAt.ToString("dd MMM yyyy", CultureInfo.InvariantCulture)
-                                                </MudText>
-                                            </MudStack>
+                                        <MudText Typo="Typo.h6">@article.Title</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@GetContentPreview(article.Content)</MudText>
 
-                                            <MudText Typo="Typo.h6">@article.Title</MudText>
-                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@GetContentPreview(article.Content)</MudText>
+                                        <MudDivider />
 
-                                            <MudDivider />
-
-                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Outlined.Folder">
-                                                    @(article.CategoryName ?? "Uncategorized")
-                                                </MudChip>
-                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                                    <MudIcon Icon="@Icons.Material.Outlined.Person" Size="Size.Small" Color="Color.Secondary" />
-                                                    <MudText Typo="Typo.caption">@article.AuthorEmail</MudText>
-                                                </MudStack>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Icon="@Icons.Material.Outlined.Folder">
+                                                @(article.CategoryName ?? "Uncategorized")
+                                            </MudChip>
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="@Icons.Material.Outlined.Person" Size="Size.Small" Color="Color.Secondary" />
+                                                <MudText Typo="Typo.caption">@article.AuthorEmail</MudText>
                                             </MudStack>
                                         </MudStack>
-                                    </MudCardContent>
-                                </MudCard>
-                            </MudItem>
-                        }
-                    </MudGrid>
-                }
+                                    </MudStack>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    }
+                </MudGrid>
             }
         }
     </MudStack>
@@ -267,6 +258,7 @@
 
     private async Task LoadKnowledgeAsync()
     {
+        using var loadingScope = LoadingState.BeginLoading();
         _isLoading = true;
         _loadErrorMessage = null;
 

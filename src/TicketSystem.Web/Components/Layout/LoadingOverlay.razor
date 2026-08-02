@@ -1,0 +1,23 @@
+@implements IDisposable
+@inject LoadingState LoadingState
+
+<MudOverlay Visible="@LoadingState.IsLoading" DarkBackground="true" Absolute="false" ZIndex="9999" RenderOutsideOfSection="true">
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+</MudOverlay>
+
+@code {
+    protected override void OnInitialized()
+    {
+        LoadingState.Changed += HandleChanged;
+    }
+
+    private void HandleChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        LoadingState.Changed -= HandleChanged;
+    }
+}

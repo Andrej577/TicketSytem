@@ -9,6 +9,7 @@
 @inject TicketSystemApiClient ApiClient
 @inject IConfiguration Configuration
 @inject ISnackbar Snackbar
+@inject LoadingState LoadingState
 
 <PageTitle>Tickets | Ticket System</PageTitle>
 <HeadContent>
@@ -35,14 +36,7 @@
             }
         </MudStack>
 
-        @if (_isLoading)
-        {
-            <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="pa-8">
-                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                <MudText Typo="Typo.body2">Loading tickets...</MudText>
-            </MudStack>
-        }
-        else if (!string.IsNullOrWhiteSpace(_loadErrorMessage))
+        @if (!string.IsNullOrWhiteSpace(_loadErrorMessage))
         {
             <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
                 <MudStack Spacing="2">
@@ -317,6 +311,7 @@
 
     private async Task LoadTicketsAsync()
     {
+        using var loadingScope = LoadingState.BeginLoading();
         _isLoading = true;
         _loadErrorMessage = null;
 

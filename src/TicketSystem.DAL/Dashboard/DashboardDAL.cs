@@ -14,6 +14,7 @@ public sealed class DashboardDAL
     private const string TicketTable = "Ticket";
     private const string TicketPriorityTable = "TicketPriority";
     private const string TicketStatusTable = "TicketStatus";
+    private const string TicketStatusHistoryTable = "TicketStatusHistory";
 
     private const short OpenStatusId = 1;
     private const short InProgressStatusId = 2;
@@ -126,7 +127,8 @@ public sealed class DashboardDAL
                     'TicketCreated' AS "EventType",
                     "Ticket"."CreatedAt" AS "OccurredAt",
                     "Ticket"."Title" AS "Title",
-                    "Customer"."Email" AS "ActorEmail"
+                    "Customer"."FirstName" || ' ' || "Customer"."LastName" AS "ActorName",
+                    NULL AS "StatusName"
                 FROM "{TicketTable}" AS "Ticket"
                 INNER JOIN "{AppUserTable}" AS "Customer" ON "Customer"."Id" = "Ticket"."CustomerId"
                 WHERE "Ticket"."IsDeleted" = false
@@ -134,24 +136,26 @@ public sealed class DashboardDAL
                 UNION ALL
 
                 SELECT
-                    'TicketClosed' AS "EventType",
-                    "Ticket"."ClosedAt" AS "OccurredAt",
+                    'TicketStatusChanged' AS "EventType",
+                    "StatusHistory"."ChangedAt" AS "OccurredAt",
                     "Ticket"."Title" AS "Title",
-                    "Operator"."Email" AS "ActorEmail"
-                FROM "{TicketTable}" AS "Ticket"
-                LEFT JOIN "{AppUserTable}" AS "Operator" ON "Operator"."Id" = "Ticket"."OperatorId"
-                WHERE "Ticket"."IsDeleted" = false AND "Ticket"."ClosedAt" IS NOT NULL
+                    "Actor"."FirstName" || ' ' || "Actor"."LastName" AS "ActorName",
+                    "NewStatus"."Name" AS "StatusName"
+                FROM "{TicketStatusHistoryTable}" AS "StatusHistory"
+                INNER JOIN "{TicketTable}" AS "Ticket" ON "Ticket"."Id" = "StatusHistory"."TicketId"
+                INNER JOIN "{AppUserTable}" AS "Actor" ON "Actor"."Id" = "StatusHistory"."ChangedByUserId"
+                INNER JOIN "{TicketStatusTable}" AS "NewStatus" ON "NewStatus"."Id" = "StatusHistory"."NewStatusId"
+                WHERE "Ticket"."IsDeleted" = false
 
                 UNION ALL
 
                 SELECT
-                    'MessageSent' AS "EventType",
-                    "Message"."SentAt" AS "OccurredAt",
-                    COALESCE("Ticket"."Title", 'Chat message') AS "Title",
-                    "Sender"."Email" AS "ActorEmail"
-                FROM "{MessageTable}" AS "Message"
-                INNER JOIN "{AppUserTable}" AS "Sender" ON "Sender"."Id" = "Message"."SenderId"
-                LEFT JOIN "{TicketTable}" AS "Ticket" ON "Ticket"."Id" = "Message"."TicketId"
+                    'UserCreated' AS "EventType",
+                    "AppUser"."CreatedAt" AS "OccurredAt",
+                    "AppUser"."FirstName" || ' ' || "AppUser"."LastName" AS "Title",
+                    "AppUser"."FirstName" || ' ' || "AppUser"."LastName" AS "ActorName",
+                    NULL AS "StatusName"
+                FROM "{AppUserTable}" AS "AppUser"
 
                 UNION ALL
 
@@ -159,7 +163,8 @@ public sealed class DashboardDAL
                     'KnowledgePublished' AS "EventType",
                     "Knowledge"."PublishedAt" AS "OccurredAt",
                     "Knowledge"."Title" AS "Title",
-                    "Author"."Email" AS "ActorEmail"
+                    "Author"."FirstName" || ' ' || "Author"."LastName" AS "ActorName",
+                    NULL AS "StatusName"
                 FROM "{KnowledgeTable}" AS "Knowledge"
                 INNER JOIN "{AppUserTable}" AS "Author" ON "Author"."Id" = "Knowledge"."AuthorId"
                 WHERE "Knowledge"."PublishedAt" IS NOT NULL

@@ -2,7 +2,7 @@ namespace TicketSystem.DAL.Database;
 
 public static class DatabaseMigrations
 {
-    public static int DatabaseVersion { get; } = 6;
+    public static int DatabaseVersion { get; } = 7;
 
     public static IReadOnlyList<DatabaseMigration> All { get; } =
     [
@@ -11,7 +11,8 @@ public static class DatabaseMigrations
         new(3, UpgradeTo3()),
         new(4, UpgradeTo4()),
         new(5, UpgradeTo5()),
-        new(6, UpgradeTo6())
+        new(6, UpgradeTo6()),
+        new(7, UpgradeTo7())
     ];
 
     private static string UpgradeTo1()
@@ -403,6 +404,41 @@ public static class DatabaseMigrations
             CREATE INDEX "IXMediaFileChatSessionIdCreatedAt" ON "MediaFile" ("ChatSessionId", "CreatedAt");
 
             CREATE INDEX "IXMediaFileUploadedByUserId" ON "MediaFile" ("UploadedByUserId");
+            """;
+    }
+
+    private static string UpgradeTo7()
+    {
+        return """
+            CREATE TABLE "TicketStatusHistory" (
+                "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+                "TicketId" uuid NOT NULL,
+                "OldStatusId" smallint NOT NULL,
+                "NewStatusId" smallint NOT NULL,
+                "ChangedByUserId" uuid NOT NULL,
+                "ChangedAt" timestamp with time zone NOT NULL DEFAULT now(),
+                CONSTRAINT "PK_TicketStatusHistory" PRIMARY KEY ("Id")
+            );
+
+            ALTER TABLE "TicketStatusHistory"
+            ADD CONSTRAINT "FK_TicketStatusHistoryTicketIdTicket"
+            FOREIGN KEY ("TicketId") REFERENCES "Ticket" ("Id") ON DELETE CASCADE;
+
+            ALTER TABLE "TicketStatusHistory"
+            ADD CONSTRAINT "FK_TicketStatusHistoryOldStatusIdTicketStatus"
+            FOREIGN KEY ("OldStatusId") REFERENCES "TicketStatus" ("Id") ON DELETE RESTRICT;
+
+            ALTER TABLE "TicketStatusHistory"
+            ADD CONSTRAINT "FK_TicketStatusHistoryNewStatusIdTicketStatus"
+            FOREIGN KEY ("NewStatusId") REFERENCES "TicketStatus" ("Id") ON DELETE RESTRICT;
+
+            ALTER TABLE "TicketStatusHistory"
+            ADD CONSTRAINT "FK_TicketStatusHistoryChangedByUserIdAppUser"
+            FOREIGN KEY ("ChangedByUserId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
+
+            CREATE INDEX "IXTicketStatusHistoryTicketIdChangedAt" ON "TicketStatusHistory" ("TicketId", "ChangedAt");
+
+            CREATE INDEX "IXTicketStatusHistoryChangedByUserId" ON "TicketStatusHistory" ("ChangedByUserId");
             """;
     }
 }

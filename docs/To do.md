@@ -8,8 +8,8 @@
 9. Chat mora imat preview graficke datoteke (slike itd)
 10. Ako se dropa datoteka u chat neka bude kao lista datoteka koje su spremne za slanje i kada se pošalju neka poruka ima naziv datotkee i opciju za dowload - nije gotovo još
 11. bug ako se radi s datotekama (download) onda na refreshu ticket page-a opet nudi dowload
-12. Provjeriti migracijsku datoteku i dali svi pozivi u bazu podataka imaju smisla
-13. Users - napraviti kartice s master trazilicom i grupama, maknuti se od datagrida
+12. Users - napraviti kartice s master trazilicom i grupama, maknuti se od datagrida
+13. Provjeriti migracijsku datoteku i dali svi pozivi u bazu podataka imaju smisla
 14. Napraviti request i response objekte koje cemo slati i primati s APIja, ovako imamo prevelike argumente u funkcijama koji se odnose na isti objekt
 15. Priprema za deploy (micanje tesnih usera s logina?)
 16. Tu imamo ludorije s dockerima i treba napraviti jedan dobar za deploy

@@ -104,6 +104,16 @@ CREATE TABLE "MessageRead" (
     CONSTRAINT "PK_MessageRead" PRIMARY KEY ("MessageId", "UserId")
 );
 
+CREATE TABLE "TicketStatusHistory" (
+    "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
+    "TicketId" uuid NOT NULL,
+    "OldStatusId" smallint NOT NULL,
+    "NewStatusId" smallint NOT NULL,
+    "ChangedByUserId" uuid NOT NULL,
+    "ChangedAt" timestamp with time zone NOT NULL DEFAULT now(),
+    CONSTRAINT "PK_TicketStatusHistory" PRIMARY KEY ("Id")
+);
+
 CREATE TABLE "MediaFile" (
     "Id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "ChatSessionId" uuid NOT NULL,
@@ -172,6 +182,22 @@ ALTER TABLE "Ticket"
 ADD CONSTRAINT "FK_TicketUpdatedByUserIdAppUser"
 FOREIGN KEY ("UpdatedByUserId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
 
+ALTER TABLE "TicketStatusHistory"
+ADD CONSTRAINT "FK_TicketStatusHistoryTicketIdTicket"
+FOREIGN KEY ("TicketId") REFERENCES "Ticket" ("Id") ON DELETE CASCADE;
+
+ALTER TABLE "TicketStatusHistory"
+ADD CONSTRAINT "FK_TicketStatusHistoryOldStatusIdTicketStatus"
+FOREIGN KEY ("OldStatusId") REFERENCES "TicketStatus" ("Id") ON DELETE RESTRICT;
+
+ALTER TABLE "TicketStatusHistory"
+ADD CONSTRAINT "FK_TicketStatusHistoryNewStatusIdTicketStatus"
+FOREIGN KEY ("NewStatusId") REFERENCES "TicketStatus" ("Id") ON DELETE RESTRICT;
+
+ALTER TABLE "TicketStatusHistory"
+ADD CONSTRAINT "FK_TicketStatusHistoryChangedByUserIdAppUser"
+FOREIGN KEY ("ChangedByUserId") REFERENCES "AppUser" ("Id") ON DELETE RESTRICT;
+
 ALTER TABLE "Message"
 ADD CONSTRAINT "FK_MessageChatSessionIdChatSession"
 FOREIGN KEY ("ChatSessionId") REFERENCES "ChatSession" ("Id") ON DELETE CASCADE;
@@ -233,6 +259,10 @@ CREATE INDEX "IXTicketStatusId" ON "Ticket" ("StatusId");
 CREATE INDEX "IXTicketPriorityId" ON "Ticket" ("PriorityId");
 
 CREATE INDEX "IXTicketUpdatedByUserId" ON "Ticket" ("UpdatedByUserId");
+
+CREATE INDEX "IXTicketStatusHistoryTicketIdChangedAt" ON "TicketStatusHistory" ("TicketId", "ChangedAt");
+
+CREATE INDEX "IXTicketStatusHistoryChangedByUserId" ON "TicketStatusHistory" ("ChangedByUserId");
 
 CREATE INDEX "IXMessageChatSessionIdSentAt" ON "Message" ("ChatSessionId", "SentAt");
 

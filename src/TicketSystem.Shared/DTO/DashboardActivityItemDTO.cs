@@ -8,5 +8,7 @@ public sealed class DashboardActivityItemDTO
 
     public string Title { get; set; } = string.Empty;
 
-    public string? ActorEmail { get; set; }
+    public string? ActorName { get; set; }
+
+    public string? StatusName { get; set; }
 }

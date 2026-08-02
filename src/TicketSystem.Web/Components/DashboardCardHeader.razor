@@ -1,17 +1,12 @@
 <MudStack Row="true" Justify="Justify.SpaceBetween">
     <MudStack Spacing="0">
         <MudText Typo="@Typo">@Title</MudText>
-        <MudText Typo="Typo.caption">@Subtitle</MudText>
     </MudStack>
-    <MudIconButton Icon="@Icons.Material.Outlined.MoreHoriz" Size="Size.Small" Disabled="true" aria-label="More options" />
 </MudStack>
 
 @code {
     [Parameter, EditorRequired]
     public string Title { get; set; } = string.Empty;
-
-    [Parameter, EditorRequired]
-    public string Subtitle { get; set; } = string.Empty;
 
     [Parameter]
     public Typo Typo { get; set; } = Typo.subtitle2;

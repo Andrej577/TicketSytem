@@ -7,6 +7,7 @@
 @inject TicketSystemApiClient ApiClient
 @inject IConfiguration Configuration
 @inject ISnackbar Snackbar
+@inject LoadingState LoadingState
 
 <PageTitle>Dashboard | Ticket System</PageTitle>
 <HeadContent>
@@ -19,18 +20,11 @@
             <MudText Typo="Typo.h4">Dashboard</MudText>
 
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" aria-label="Dashboard filters">
-                <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" OverrideStyles="false">
-                    <MudButton Variant="@(IsSevenDayPreset ? Variant.Filled : Variant.Outlined)" Color="@(IsSevenDayPreset ? Color.Primary : Color.Default)" OnClick="@(() => ApplyPresetDaysAsync(7))">7 days</MudButton>
-                    <MudButton Variant="@(IsTwentyEightDayPreset ? Variant.Filled : Variant.Outlined)" Color="@(IsTwentyEightDayPreset ? Color.Primary : Color.Default)" OnClick="@(() => ApplyPresetDaysAsync(28))">28 days</MudButton>
-                    <MudButton Variant="@(IsThreeMonthPreset ? Variant.Filled : Variant.Outlined)" Color="@(IsThreeMonthPreset ? Color.Primary : Color.Default)" OnClick="@(() => ApplyPresetMonthsAsync(3))">3 months</MudButton>
-                </MudButtonGroup>
-                <MudIconButton Icon="@Icons.Material.Outlined.ChevronLeft" Size="Size.Small" OnClick="@(() => ShiftMonthAsync(-1))" aria-label="Previous month" />
-                <MudDateRangePicker Label="Date range" @bind-DateRange="_dateRange" @bind-DateRange:after="LoadDashboardAsync" Variant="@(IsCustomRange ? Variant.Filled : Variant.Outlined)" Color="@(IsCustomRange ? Color.Primary : Color.Default)" Margin="Margin.Dense" Style="width: 280px;" AdornmentIcon="@_calendarIcon" />
-                <MudIconButton Icon="@Icons.Material.Outlined.ChevronRight" Size="Size.Small" OnClick="@(() => ShiftMonthAsync(1))" aria-label="Next month" />
-                @if (_isLoading)
-                {
-                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
-                }
+                <MudToggleGroup T="RangePreset?" Value="@SelectedPreset" ValueChanged="@ApplyPresetAsync" Color="Color.Primary" Vertical="false">
+                    <MudToggleItem T="RangePreset?" Value="RangePreset.SevenDays" Text="7 days" />
+                    <MudToggleItem T="RangePreset?" Value="RangePreset.TwentyEightDays" Text="28 days" />
+                    <MudToggleItem T="RangePreset?" Value="RangePreset.ThreeMonths" Text="3 months" />
+                </MudToggleGroup>
             </MudStack>
         </MudStack>
 
@@ -61,7 +55,7 @@
                                 <MudList T="string" Dense="true">
                                     @foreach (var activity in _dashboard.RecentActivity)
                                     {
-                                        <MudListItem T="string" Icon="@GetActivityIcon(activity.EventType)">
+                                        <MudListItem T="string" Icon="@GetActivityIcon(activity)">
                                             <MudText Typo="Typo.body2">@GetActivityText(activity)</MudText>
                                             <MudText Typo="Typo.caption">@activity.OccurredAt.ToLocalTime().ToString("g")</MudText>
                                         </MudListItem>
@@ -83,9 +77,9 @@
                             }
                             else
                             {
-                                <MudText Typo="Typo.caption">By status</MudText>
+                                <MudText Typo="Typo.body2">By status</MudText>
                                 <MudChart T="double" ChartType="ChartType.Donut" ChartSeries="_statusSeries" ChartLabels="_statusLabels" ChartOptions="_statusChartOptions" Width="100%" Height="180px" />
-                                <MudText Typo="Typo.caption" Class="mt-2">By priority</MudText>
+                                <MudText Typo="Typo.body2" Class="mt-2">By priority</MudText>
                                 <MudChart T="double" ChartType="ChartType.Donut" ChartSeries="_prioritySeries" ChartLabels="_priorityLabels" ChartOptions="_priorityChartOptions" Width="100%" Height="180px" />
                             }
                         </div>
@@ -203,6 +197,8 @@
 </style>
 
 @code {
+    private enum RangePreset { SevenDays, TwentyEightDays, ThreeMonths }
+
     [CascadingParameter]
     private Task<AuthenticationState> _authenticationState { get; set; } = default!;
 
@@ -217,8 +213,7 @@
     private CancellationTokenSource? _refreshDebounceCts;
 
     private DashboardDTO? _dashboard;
-    private DateRange _dateRange = new(DateTime.Today.AddDays(-30), DateTime.Today);
-    private bool _isLoading = true;
+    private DateRange _dateRange = new(DateTime.Today.AddDays(-28), DateTime.Today);
     private string? _loadErrorMessage;
 
     private List<ChartSeries<double>> _statusSeries = [];
@@ -362,15 +357,35 @@
         });
     }
 
-    private const string _calendarIcon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"><path d="M21,2H18V0H16V2H8V0H6V2H3A3,3,0,0,0,0,5V24H24V5A3,3,0,0,0,21,2ZM2,5A1,1,0,0,1,3,4H21a1,1,0,0,1,1,1V8H2ZM2,22V10H22V22Z"></path><rect x="15" y="13" width="2" height="2"></rect><rect x="11" y="13" width="2" height="2"></rect><rect x="7" y="13" width="2" height="2"></rect><rect x="15" y="17" width="2" height="2"></rect><rect x="11" y="17" width="2" height="2"></rect><rect x="7" y="17" width="2" height="2"></rect></svg>""";
-
     private bool IsSevenDayPreset => _dateRange.Start?.Date == DateTime.Today.AddDays(-7) && _dateRange.End?.Date == DateTime.Today;
 
     private bool IsTwentyEightDayPreset => _dateRange.Start?.Date == DateTime.Today.AddDays(-28) && _dateRange.End?.Date == DateTime.Today;
 
     private bool IsThreeMonthPreset => _dateRange.Start?.Date == DateTime.Today.AddMonths(-3) && _dateRange.End?.Date == DateTime.Today;
 
-    private bool IsCustomRange => !IsSevenDayPreset && !IsTwentyEightDayPreset && !IsThreeMonthPreset;
+    private RangePreset? SelectedPreset => IsSevenDayPreset
+        ? RangePreset.SevenDays
+        : IsTwentyEightDayPreset
+            ? RangePreset.TwentyEightDays
+            : IsThreeMonthPreset
+                ? RangePreset.ThreeMonths
+                : null;
+
+    private async Task ApplyPresetAsync(RangePreset? preset)
+    {
+        switch (preset)
+        {
+            case RangePreset.SevenDays:
+                await ApplyPresetDaysAsync(7);
+                break;
+            case RangePreset.TwentyEightDays:
+                await ApplyPresetDaysAsync(28);
+                break;
+            case RangePreset.ThreeMonths:
+                await ApplyPresetMonthsAsync(3);
+                break;
+        }
+    }
 
     private async Task ApplyPresetDaysAsync(int days)
     {
@@ -384,17 +399,9 @@
         await LoadDashboardAsync();
     }
 
-    private async Task ShiftMonthAsync(int months)
-    {
-        var start = (_dateRange.Start ?? DateTime.Today).AddMonths(months);
-        var end = (_dateRange.End ?? DateTime.Today).AddMonths(months);
-        _dateRange = new DateRange(start, end);
-        await LoadDashboardAsync();
-    }
-
     private async Task LoadDashboardAsync()
     {
-        _isLoading = true;
+        using var loadingScope = LoadingState.BeginLoading();
         _loadErrorMessage = null;
 
         try
@@ -425,10 +432,6 @@
         catch (TaskCanceledException)
         {
             _loadErrorMessage = "The dashboard request timed out. Please try again.";
-        }
-        finally
-        {
-            _isLoading = false;
         }
     }
 
@@ -476,21 +479,22 @@
         return hours.Value < 24 ? $"{hours.Value:0.#}h" : $"{hours.Value / 24:0.#}d";
     }
 
-    private static string GetActivityIcon(string eventType) => eventType switch
+    private static string GetActivityIcon(DashboardActivityItemDTO activity) => activity.EventType switch
     {
         "TicketCreated" => Icons.Material.Outlined.ConfirmationNumber,
-        "TicketClosed" => Icons.Material.Outlined.CheckCircleOutline,
-        "MessageSent" => Icons.Material.Outlined.Chat,
+        "TicketStatusChanged" when activity.StatusName == "Closed" => Icons.Material.Outlined.CheckCircleOutline,
+        "TicketStatusChanged" => Icons.Material.Outlined.SyncAlt,
+        "UserCreated" => Icons.Material.Outlined.PersonAdd,
         "KnowledgePublished" => Icons.Material.Outlined.MenuBook,
         _ => Icons.Material.Outlined.History
     };
 
     private static string GetActivityText(DashboardActivityItemDTO activity) => activity.EventType switch
     {
-        "TicketCreated" => $"New ticket \"{activity.Title}\" created by {activity.ActorEmail}",
-        "TicketClosed" => $"Ticket \"{activity.Title}\" closed",
-        "MessageSent" => $"{activity.ActorEmail} sent a message on \"{activity.Title}\"",
-        "KnowledgePublished" => $"Knowledge article \"{activity.Title}\" published by {activity.ActorEmail}",
+        "TicketCreated" => $"New ticket \"{activity.Title}\" created by {activity.ActorName}",
+        "TicketStatusChanged" => $"Ticket \"{activity.Title}\" status changed to {activity.StatusName} by {activity.ActorName}",
+        "UserCreated" => $"New user account created for {activity.ActorName}",
+        "KnowledgePublished" => $"Knowledge article \"{activity.Title}\" published by {activity.ActorName}",
         _ => activity.Title
     };
 

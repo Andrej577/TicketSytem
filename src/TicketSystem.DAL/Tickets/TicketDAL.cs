@@ -10,6 +10,7 @@ public sealed class TicketDAL
     private const string AppUserTable = "AppUser";
     private const string TicketPriorityTable = "TicketPriority";
     private const string TicketTable = "Ticket";
+    private const string TicketStatusHistoryTable = "TicketStatusHistory";
 
     private readonly NpgsqlDataSource dataSource;
 
@@ -132,47 +133,73 @@ public sealed class TicketDAL
     public async Task<bool> UpdateAsync(Guid id, Guid customerId, Guid? operatorId, string title, string content, short statusId, short priorityId, DateTimeOffset? closedAt, Guid updatedByUserId, CancellationToken cancellationToken)
     {
         var sql = $"""
-            UPDATE "{TicketTable}"
-            SET
-                "CustomerId" = @CustomerId,
-                "OperatorId" = @OperatorId,
-                "Title" = @Title,
-                "Content" = @Content,
-                "StatusId" = @StatusId,
-                "PriorityId" = @PriorityId,
-                "ClosedAt" = @ClosedAt,
-                "UpdatedAt" = now(),
-                "UpdatedByUserId" = @UpdatedByUserId
-            WHERE "Id" = @Id AND "IsDeleted" = false;
+            WITH "OldTicket" AS (
+                SELECT "StatusId" FROM "{TicketTable}" WHERE "Id" = @Id AND "IsDeleted" = false
+            ),
+            "UpdatedTicket" AS (
+                UPDATE "{TicketTable}"
+                SET
+                    "CustomerId" = @CustomerId,
+                    "OperatorId" = @OperatorId,
+                    "Title" = @Title,
+                    "Content" = @Content,
+                    "StatusId" = @StatusId,
+                    "PriorityId" = @PriorityId,
+                    "ClosedAt" = @ClosedAt,
+                    "UpdatedAt" = now(),
+                    "UpdatedByUserId" = @UpdatedByUserId
+                WHERE "Id" = @Id AND "IsDeleted" = false
+                RETURNING "Id", "StatusId"
+            ),
+            "StatusHistoryInsert" AS (
+                INSERT INTO "{TicketStatusHistoryTable}" ("TicketId", "OldStatusId", "NewStatusId", "ChangedByUserId")
+                SELECT "UpdatedTicket"."Id", "OldTicket"."StatusId", "UpdatedTicket"."StatusId", @UpdatedByUserId
+                FROM "UpdatedTicket", "OldTicket"
+                WHERE "OldTicket"."StatusId" IS DISTINCT FROM "UpdatedTicket"."StatusId"
+            )
+            SELECT EXISTS (SELECT 1 FROM "UpdatedTicket");
             """;
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var parameters = new { Id = id, CustomerId = customerId, OperatorId = operatorId, Title = title, Content = content, StatusId = statusId, PriorityId = priorityId, ClosedAt = closedAt, UpdatedByUserId = updatedByUserId };
         var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        return await connection.ExecuteAsync(command) > 0;
+        return await connection.QuerySingleAsync<bool>(command);
     }
 
     public async Task<bool> UpdateAssignedAsync(Guid id, Guid operatorId, string title, string content, short statusId, short priorityId, DateTimeOffset? closedAt, CancellationToken cancellationToken)
     {
         var sql = $"""
-            UPDATE "{TicketTable}"
-            SET
-                "Title" = @Title,
-                "Content" = @Content,
-                "StatusId" = @StatusId,
-                "PriorityId" = @PriorityId,
-                "ClosedAt" = @ClosedAt,
-                "UpdatedAt" = now(),
-                "UpdatedByUserId" = @OperatorId
-            WHERE "Id" = @Id
-                AND "OperatorId" = @OperatorId
-                AND "IsDeleted" = false;
+            WITH "OldTicket" AS (
+                SELECT "StatusId" FROM "{TicketTable}" WHERE "Id" = @Id AND "OperatorId" = @OperatorId AND "IsDeleted" = false
+            ),
+            "UpdatedTicket" AS (
+                UPDATE "{TicketTable}"
+                SET
+                    "Title" = @Title,
+                    "Content" = @Content,
+                    "StatusId" = @StatusId,
+                    "PriorityId" = @PriorityId,
+                    "ClosedAt" = @ClosedAt,
+                    "UpdatedAt" = now(),
+                    "UpdatedByUserId" = @OperatorId
+                WHERE "Id" = @Id
+                    AND "OperatorId" = @OperatorId
+                    AND "IsDeleted" = false
+                RETURNING "Id", "StatusId"
+            ),
+            "StatusHistoryInsert" AS (
+                INSERT INTO "{TicketStatusHistoryTable}" ("TicketId", "OldStatusId", "NewStatusId", "ChangedByUserId")
+                SELECT "UpdatedTicket"."Id", "OldTicket"."StatusId", "UpdatedTicket"."StatusId", @OperatorId
+                FROM "UpdatedTicket", "OldTicket"
+                WHERE "OldTicket"."StatusId" IS DISTINCT FROM "UpdatedTicket"."StatusId"
+            )
+            SELECT EXISTS (SELECT 1 FROM "UpdatedTicket");
             """;
 
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         var parameters = new { Id = id, OperatorId = operatorId, Title = title, Content = content, StatusId = statusId, PriorityId = priorityId, ClosedAt = closedAt };
         var command = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        return await connection.ExecuteAsync(command) > 0;
+        return await connection.QuerySingleAsync<bool>(command);
     }
 
     public async Task<int> DeleteAsync(Guid id, Guid updatedByUserId, CancellationToken cancellationToken)

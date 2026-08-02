@@ -9,6 +9,7 @@
 @inject TicketSystemApiClient ApiClient
 @inject IConfiguration Configuration
 @inject ISnackbar Snackbar
+@inject LoadingState LoadingState
 
 <PageTitle>Users | Ticket System</PageTitle>
 
@@ -191,6 +192,7 @@
 
     private async Task LoadUsersAsync()
     {
+        using var loadingScope = LoadingState.BeginLoading();
         _isLoading = true;
         _loadErrorMessage = null;
 
