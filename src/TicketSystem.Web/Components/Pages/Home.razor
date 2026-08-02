@@ -481,11 +481,11 @@
 
     private static string GetActivityIcon(DashboardActivityItemDTO activity) => activity.EventType switch
     {
-        "TicketCreated" => Icons.Material.Outlined.ConfirmationNumber,
-        "TicketStatusChanged" when activity.StatusName == "Closed" => Icons.Material.Outlined.CheckCircleOutline,
+        "TicketCreated" => AppIcons.Navigation.Tickets,
+        "TicketStatusChanged" when activity.StatusName == "Closed" => AppIcons.Misc.Closed,
         "TicketStatusChanged" => Icons.Material.Outlined.SyncAlt,
-        "UserCreated" => Icons.Material.Outlined.PersonAdd,
-        "KnowledgePublished" => Icons.Material.Outlined.MenuBook,
+        "UserCreated" => AppIcons.Actions.AddUser,
+        "KnowledgePublished" => AppIcons.Navigation.KnowledgeBase,
         _ => Icons.Material.Outlined.History
     };
 

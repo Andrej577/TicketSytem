@@ -7,14 +7,15 @@
 @inject IDialogService DialogService
 @inject TicketSystemApiClient ApiClient
 @inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
 
 <MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6">Ticket #@_editedTicket.TicketNumber</MudText>
     </TitleContent>
     <DialogContent>
-        <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1" Class="ticket-tabs-header">
-            <MudTabs KeepPanelsAlive="true" Rounded="true" ApplyEffectsToContainer="true" Class="flex-grow-1">
+        <div class="ticket-tabs-header">
+        <MudTabs KeepPanelsAlive="true" Rounded="true" ApplyEffectsToContainer="true" ActivePanelIndexChanged="HandleActivePanelIndexChangedAsync">
             <MudTabPanel Text="Details" Icon="@Icons.Material.Outlined.Info">
                 <div class="ticket-details-tab">
                     <MudStack Spacing="3">
@@ -71,10 +72,17 @@
 
                         <MudTextField T="string" Label="Content" @bind-Value="_editedTicket.Content" @bind-Value:after="AutoSaveAsync" ReadOnly="_isReadOnly" Lines="6" Variant="Variant.Outlined" />
 
-                        <MudStack Spacing="0">
-                            <MudText Typo="Typo.caption">Created @_editedTicket.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                            <MudText Typo="Typo.caption">Updated @_editedTicket.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                        </MudStack>
+                        <MudDivider />
+                        <MudGrid Spacing="2">
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Created</MudText>
+                                <MudText Typo="Typo.body2">@_editedTicket.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Updated</MudText>
+                                <MudText Typo="Typo.body2">@_editedTicket.UpdatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                            </MudItem>
+                        </MudGrid>
                     </MudStack>
                 </div>
             </MudTabPanel>
@@ -91,7 +99,7 @@
                             }
                             else
                             {
-                                <div class="ticket-chat-scroll">
+                                <div class="ticket-chat-scroll" @ref="_chatScrollElement">
                                     @if (ChatTimeline.Count == 0)
                                     {
                                         <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="mud-height-full">
@@ -106,33 +114,27 @@
                                             {
                                                 @if (entry.Message is not null)
                                                 {
-                                                    <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
-                                                        <MudAvatar Color="Color.Primary" Size="Size.Medium">@GetMessageSenderInitials(entry.Message)</MudAvatar>
-                                                        <MudPaper Outlined="true" Class="pa-3 flex-grow-1">
-                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
-                                                                <MudText Typo="Typo.subtitle2">@GetMessageSenderName(entry.Message)</MudText>
-                                                                <MudText Typo="Typo.caption">@entry.Message.SentAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                                                            </MudStack>
-                                                            <MudText Typo="Typo.body2" Class="ticket-message-content">@entry.Message.Content</MudText>
-                                                        </MudPaper>
-                                                    </MudStack>
+                                                    <MudPaper Outlined="true" Class="pa-3">
+                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+                                                            <MudText Typo="Typo.subtitle2" Color="@GetSenderColor(entry.Message.SenderId)">@GetMessageSenderName(entry.Message)</MudText>
+                                                            <MudText Typo="Typo.caption">@entry.Message.SentAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                                                        </MudStack>
+                                                        <MudText Typo="Typo.body2" Class="ticket-message-content">@entry.Message.Content</MudText>
+                                                    </MudPaper>
                                                 }
                                                 else if (entry.MediaFile is not null)
                                                 {
-                                                    <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="1">
-                                                        <MudAvatar Color="Color.Primary" Size="Size.Medium">@GetMediaUploaderInitials(entry.MediaFile)</MudAvatar>
-                                                        <MudPaper Outlined="true" Class="pa-3 flex-grow-1">
-                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
-                                                                <MudText Typo="Typo.subtitle2">@GetMediaUploaderName(entry.MediaFile)</MudText>
-                                                                <MudText Typo="Typo.caption">@entry.MediaFile.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
-                                                            </MudStack>
-                                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
-                                                                <MudIcon Icon="@Icons.Material.Outlined.Description" Color="Color.Primary" />
-                                                                <MudText Typo="Typo.body2" Class="flex-grow-1">@GetMediaFileName(entry.MediaFile)</MudText>
-                                                                <MudIconButton Icon="@Icons.Material.Outlined.Download" Color="Color.Primary" Href="@GetMediaDownloadUrl(entry.MediaFile)" aria-label="Download file" />
-                                                            </MudStack>
-                                                        </MudPaper>
-                                                    </MudStack>
+                                                    <MudPaper Outlined="true" Class="pa-3">
+                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Spacing="2">
+                                                            <MudText Typo="Typo.subtitle2" Color="@GetSenderColor(entry.MediaFile.UploadedByUserId)">@GetMediaUploaderName(entry.MediaFile)</MudText>
+                                                            <MudText Typo="Typo.caption">@entry.MediaFile.CreatedAt.ToString("dd MMM yyyy, HH:mm", CultureInfo.InvariantCulture)</MudText>
+                                                        </MudStack>
+                                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-1">
+                                                            <MudIcon Icon="@Icons.Material.Outlined.Description" Color="Color.Primary" />
+                                                            <MudText Typo="Typo.body2" Class="flex-grow-1">@GetMediaFileName(entry.MediaFile)</MudText>
+                                                            <MudIconButton Icon="@Icons.Material.Outlined.Download" Color="Color.Primary" Href="@GetMediaDownloadUrl(entry.MediaFile)" aria-label="Download file" />
+                                                        </MudStack>
+                                                    </MudPaper>
                                                 }
                                             }
                                         </MudStack>
@@ -167,7 +169,7 @@
                                 <MudMenu Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomLeft">
                                     <ActivatorContent>
                                         <MudTooltip Text="Dodaj privitak">
-                                            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="@context.ToggleAsync" Disabled="@(_isChatClosed || _isSendingMessage)" aria-label="Dodaj privitak" />
+                                            <MudFab Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" OnClick="@context.ToggleAsync" Disabled="@(_isChatClosed || _isSendingMessage)" aria-label="Dodaj privitak" />
                                         </MudTooltip>
                                     </ActivatorContent>
                                     <ChildContent>
@@ -179,7 +181,7 @@
                                         </MudFileUpload>
                                         <MudFileUpload T="IBrowserFile" Accept="@AllowedMediaExtensions" FilesChanged="AddPendingFile" MaximumFileCount="1" MaxFileSize="@MaximumMediaFileSize" Disabled="@(_isChatClosed || _isSendingMessage)">
                                             <CustomContent Context="deviceUpload">
-                                                <MudMenuItem Icon="@_attachmentIcon" OnClick="@deviceUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isSendingMessage)">Datoteka s uređaja</MudMenuItem>
+                                                <MudMenuItem Icon="@AppIcons.Actions.Attachment" OnClick="@deviceUpload.OpenFilePickerAsync" Disabled="@(_isChatClosed || _isSendingMessage)">Datoteka s uređaja</MudMenuItem>
                                             </CustomContent>
                                             <SelectedTemplate></SelectedTemplate>
                                         </MudFileUpload>
@@ -187,7 +189,7 @@
                                 </MudMenu>
                                 <MudTextField @ref="_messageTextField" T="string" Label="Message" @bind-Value="_newMessage" Immediate="true" OnKeyDown="HandleMessageKeyDownAsync" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="_isChatClosed" Class="flex-grow-1" />
                                 <MudTooltip Text="Pošalji poruku">
-                                    <MudFab Color="Color.Primary" StartIcon="@_sendIcon" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || (string.IsNullOrWhiteSpace(_newMessage) && _pendingFiles.Count == 0))" aria-label="Pošalji poruku" />
+                                    <MudFab Color="Color.Primary" Size="Size.Small" StartIcon="@AppIcons.Actions.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || (string.IsNullOrWhiteSpace(_newMessage) && _pendingFiles.Count == 0))" aria-label="Pošalji poruku" />
                                 </MudTooltip>
                             </MudStack>
 
@@ -204,7 +206,7 @@
                 </MudFileUpload>
             </MudTabPanel>
 
-            <MudTabPanel Text="Media files" Icon="@_attachmentIcon">
+            <MudTabPanel Text="Media files" Icon="@AppIcons.Actions.Attachment">
                 <div class="ticket-chat-tab">
                     @if (_isLoadingMediaFiles)
                     {
@@ -244,24 +246,29 @@
                     }
                 </div>
             </MudTabPanel>
-            </MudTabs>
-            @if (_canDelete)
-            {
-                <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@_deleteIcon" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)" Class="ticket-delete-button">Delete</MudButton>
-            }
-        </MudStack>
+        </MudTabs>
+        @if (_canDelete)
+        {
+            <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@AppIcons.Actions.Delete" OnClick="DeleteAsync" Disabled="@(_isSaving || _isDeleting)" Class="ticket-delete-button">Delete</MudButton>
+        }
+        </div>
     </DialogContent>
 </MudDialog>
 
 <style>
+    .ticket-tabs-header {
+        position: relative;
+    }
+
     .ticket-delete-button {
-        flex-shrink: 0;
-        height: 36px;
-        margin-top: 8px;
+        padding-bottom: 8px;
+        position: absolute;
+        right: 0;
+        top: 6px;
     }
 
     .ticket-details-tab {
-        height: 552px;
+        height: 640px;
         overflow-x: hidden;
         overflow-y: auto;
         padding: 12px;
@@ -270,7 +277,7 @@
     .ticket-chat-tab {
         display: flex;
         flex-direction: column;
-        height: 552px;
+        height: 640px;
         min-height: 0;
         position: relative;
     }
@@ -332,12 +339,6 @@
 </style>
 
 @code {
-    private const string _sendIcon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"><path d="M1.444,6.669a2,2,0,0,0-.865,3.337l3.412,3.408V20h6.593l3.435,3.43a1.987,1.987,0,0,0,1.408.588,2.034,2.034,0,0,0,.51-.066,1.978,1.978,0,0,0,1.42-1.379L23.991.021ZM2,8.592l17.028-5.02L5.993,16.586v-4Zm13.44,13.424L11.413,18h-4L20.446,4.978Z"></path></svg>""";
-
-    private const string _deleteIcon = """<svg xmlns="http://www.w3.org/2000/svg" id="Isolation_Mode" viewBox="0 0 24 24" width="1em" height="1em"><path d="M23,3H18V2.5A2.5,2.5,0,0,0,15.5,0h-7A2.5,2.5,0,0,0,6,2.5V3H1V6H3V21a3,3,0,0,0,3,3H18a3,3,0,0,0,3-3V6h2ZM18,21H6V6H18Z"></path><rect x="8" y="9" width="3" height="9"></rect><rect x="13" y="9" width="3" height="9"></rect></svg>""";
-
-    private const string _attachmentIcon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"><path d="M6.983,24.007A7,7,0,0,1,2.02,12.054l10.6-10.585a5.008,5.008,0,0,1,7.091,7.075L9.11,19.128a3.083,3.083,0,0,1-4.254,0,3,3,0,0,1,0-4.245L14.75,5.007l1.418,1.415L6.274,16.3a1,1,0,0,0,0,1.414,1.027,1.027,0,0,0,1.418,0L18.3,7.129a3.005,3.005,0,1,0-4.255-4.245L3.438,13.468a5.008,5.008,0,0,0,7.09,7.076l12.021-12,1.418,1.415-12.021,12A7,7,0,0,1,6.983,24.007Z"></path></svg>""";
-
     private const long MaximumMediaFileSize = 10 * 1024 * 1024;
     private const string AllowedMediaExtensions = ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg";
 
@@ -396,6 +397,8 @@
     private IDisposable? _chatChangedSubscription;
     private string _newMessage = string.Empty;
     private MudTextField<string>? _messageTextField;
+    private ElementReference _chatScrollElement;
+    private const int ConversationPanelIndex = 1;
     private bool _shouldFocusMessageField;
     private bool _assignToCurrentUser;
     private bool _assignmentPromptHandled;
@@ -423,6 +426,22 @@
         if (!_isChatClosed && !_isSendingMessage)
         {
             _isDraggingFile = true;
+        }
+    }
+
+    private async Task HandleActivePanelIndexChangedAsync(int index)
+    {
+        if (index != ConversationPanelIndex)
+        {
+            return;
+        }
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("scrollElementToBottom", _chatScrollElement);
+        }
+        catch (JSException)
+        {
         }
     }
 
@@ -910,19 +929,14 @@
         return $"{message.SenderFirstName} {message.SenderLastName}";
     }
 
-    private static string GetMessageSenderInitials(MessagePOCO message)
+    private Color GetSenderColor(Guid senderId)
     {
-        return GetInitials(message.SenderFirstName, message.SenderLastName);
+        return senderId == _currentUserId ? Color.Primary : Color.Secondary;
     }
 
     private static string GetMediaUploaderName(MediaFilePOCO mediaFile)
     {
         return $"{mediaFile.UploaderFirstName} {mediaFile.UploaderLastName}";
-    }
-
-    private static string GetMediaUploaderInitials(MediaFilePOCO mediaFile)
-    {
-        return GetInitials(mediaFile.UploaderFirstName, mediaFile.UploaderLastName);
     }
 
     private static string GetMediaFileName(MediaFilePOCO mediaFile)
@@ -940,13 +954,6 @@
         return sizeBytes >= 1024 * 1024
             ? $"{sizeBytes / 1024d / 1024d:0.#} MB"
             : $"{sizeBytes / 1024d:0.#} KB";
-    }
-
-    private static string GetInitials(string firstName, string lastName)
-    {
-        var firstInitial = firstName.Length == 0 ? string.Empty : firstName[..1];
-        var lastInitial = lastName.Length == 0 ? string.Empty : lastName[..1];
-        return $"{firstInitial}{lastInitial}".ToUpperInvariant();
     }
 
     public async ValueTask DisposeAsync()

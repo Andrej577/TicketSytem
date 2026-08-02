@@ -17,7 +17,7 @@
     <MudStack Spacing="3">
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.h4">Users</MudText>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@_addUserIcon" OnClick="OpenCreateUsersDialogAsync" Disabled="_isLoading">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@AppIcons.Actions.AddUser" OnClick="OpenCreateUsersDialogAsync" Disabled="_isLoading">
                 New user
             </MudButton>
         </MudStack>
@@ -69,7 +69,7 @@
                     <PropertyColumn Property="user => user.UpdatedByUserEmail" Title="Updated by" />
                     <TemplateColumn Title="Actions" Sortable="false" Filterable="false" ShowFilterIcon="false">
                         <CellTemplate Context="cell">
-                            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@_editIcon" OnClick="@(() => OpenEditUsersDialogAsync(cell.Item))">
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" StartIcon="@AppIcons.Actions.Edit" OnClick="@(() => OpenEditUsersDialogAsync(cell.Item))">
                                 Edit
                             </MudButton>
                         </CellTemplate>
@@ -88,7 +88,7 @@
                             <MudIcon Icon="@Icons.Material.Outlined.PeopleOutline" Size="Size.Large" Color="Color.Primary" />
                             <MudText Typo="Typo.subtitle1">No users</MudText>
                             <MudText Typo="Typo.body2">Create the first user account to see it here.</MudText>
-                            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@_addUserIcon" OnClick="OpenCreateUsersDialogAsync">Add a user</MudButton>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@AppIcons.Actions.AddUser" OnClick="OpenCreateUsersDialogAsync">Add a user</MudButton>
                         </MudStack>
                     }
                     else
@@ -110,10 +110,6 @@
 </MudContainer>
 
 @code {
-    private const string _addUserIcon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"><path d="M9,12A6,6,0,1,0,3,6,6.006,6.006,0,0,0,9,12ZM9,2A4,4,0,1,1,5,6,4,4,0,0,1,9,2Z"></path><polygon points="21 10 21 7 19 7 19 10 16 10 16 12 19 12 19 15 21 15 21 12 24 12 24 10 21 10"></polygon><path d="M13.043,14H4.957A4.963,4.963,0,0,0,0,18.957V24H2V18.957A2.96,2.96,0,0,1,4.957,16h8.086A2.96,2.96,0,0,1,16,18.957V24h2V18.957A4.963,4.963,0,0,0,13.043,14Z"></path></svg>""";
-
-    private const string _editIcon = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em"><path d="M22.94,1.06a3.626,3.626,0,0,0-5.124,0L0,18.876V24H5.124L22.94,6.184A3.627,3.627,0,0,0,22.94,1.06ZM4.3,22H2V19.7L15.31,6.4l2.3,2.3ZM21.526,4.77,19.019,7.277l-2.295-2.3L19.23,2.474a1.624,1.624,0,0,1,2.3,2.3Z"></path></svg>""";
-
     [CascadingParameter]
     private Task<AuthenticationState> _authenticationState { get; set; } = default!;
 
