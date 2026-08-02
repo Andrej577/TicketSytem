@@ -1,6 +1,5 @@
 @page "/login"
 @attribute [AllowAnonymous]
-@inject IConfiguration Configuration
 @inject NavigationManager Navigation
 
 <PageTitle>Login | Ticket System</PageTitle>
@@ -24,36 +23,11 @@
                     <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true">Login</MudButton>
                 </MudStack>
             </form>
-
-            @if (Configuration.GetValue<bool>("Authentication:EnableQuickLogin"))
-            {
-                <MudDivider />
-                <MudText Typo="Typo.subtitle2">Quick login</MudText>
-                <MudStack Spacing="1">
-                    @foreach (var quickLogin in _quickLogins)
-                    {
-                        <form method="post" action="/auth/quick-login">
-                            <AntiforgeryToken />
-                            <input type="hidden" name="Email" value="@quickLogin.Email" />
-                            <input type="hidden" name="ReturnUrl" value="@_returnUrl" />
-                            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true">@quickLogin.Name</MudButton>
-                        </form>
-                    }
-                </MudStack>
-            }
         </MudStack>
     </MudPaper>
 </MudContainer>
 
 @code {
-    private readonly IReadOnlyList<QuickLoginOption> _quickLogins =
-    [
-        new("Administrator", "admin@ticketsystem.local"),
-        new("Customer 1", "customer1@ticketsystem.local"),
-        new("Customer 2", "customer2@ticketsystem.local"),
-        new("Support 1", "support1@ticketsystem.local"),
-        new("Support 2", "support2@ticketsystem.local")
-    ];
     private string? _errorMessage;
     private string? _returnUrl;
 
@@ -70,6 +44,4 @@
                     : "Login is currently unavailable."
             : null;
     }
-
-    private sealed record QuickLoginOption(string Name, string Email);
 }

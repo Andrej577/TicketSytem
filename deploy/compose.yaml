@@ -77,7 +77,6 @@ services:
       ASPNETCORE_URLS: http://+:8080
       Api__BaseUrl: http://api:8080
       Realtime__BaseUrl: http://realtime:8080
-      Authentication__EnableQuickLogin: ${ENABLE_QUICK_LOGIN:-false}
       DataProtection__KeysPath: /var/ticketsystem/data-protection
     volumes:
       - web-data-protection:/var/ticketsystem/data-protection

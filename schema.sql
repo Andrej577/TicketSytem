@@ -319,9 +319,9 @@ INSERT INTO "AppUser" ("Id", "Email", "FirstName", "LastName", "PasswordHash", "
 VALUES (
     '2d6781ce-863a-4ca4-83c3-c4d521f8e23d',
     'admin@ticketsystem.local',
-    'Admin',
-    'User',
-    'pbkdf2-sha256$100000$lgmjqMVW/xj4j8oNTZkmJQ==$FCDoM5xmI0/o5IoxEzoMhClT9sNIazb13MmNk6Ih05s=',
+    'Nora',
+    'Kessler',
+    'pbkdf2-sha256$100000$RO8HapBuTj1I3JY4K5bAbQ==$Nkd4+h0EWl6Ok0OhDce2zHa/OC5Ea0jWjEK9qjpyGzI=',
     3,
     now(),
     now(),
@@ -330,7 +330,5 @@ VALUES (
 
 INSERT INTO "AppUser" ("Email", "FirstName", "LastName", "PasswordHash", "UserTypeId", "UpdatedByUserId")
 VALUES
-    ('customer1@ticketsystem.local', 'Customer', 'One', 'pbkdf2-sha256$100000$YUFcv4vEuLC/oP0DXytOfw==$qdLZall/krl8eqt8YauYy95IKdDayMHQcXCxjGhg3/0=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
-    ('customer2@ticketsystem.local', 'Customer', 'Two', 'pbkdf2-sha256$100000$YpD12bK6eZYl72w0OcEeXA==$ejIdWPs6McK0WIkuG5PzK9cw+LXvqCJ76F33XKWfiQ4=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
-    ('support1@ticketsystem.local', 'Support', 'One', 'pbkdf2-sha256$100000$bVeYhVewq6bgqstV7VxaYg==$sCeDxZbSVh9lZcMLZZfExy+4VLvAeZi8EekO/mcuWrM=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
-    ('support2@ticketsystem.local', 'Support', 'Two', 'pbkdf2-sha256$100000$hGz/qId57Ox8lR2MHCv5Ag==$ca952K+yHQFEDAwalyXwtTmOuuAviwh5y94EPCJLWt4=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d');
+    ('customer@ticketsystem.local', 'Maya', 'Torres', 'pbkdf2-sha256$100000$XGbMsSXce9qGP4itbrjmUw==$eTNpA8qYGtXqtBnAz7g/xU+NW/xW0lCBqoWxKCpzFk0=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
+    ('operator@ticketsystem.local', 'Leo', 'Fischer', 'pbkdf2-sha256$100000$vdyIol3+v7HKN9d3EmetCw==$MgG4JcY55yGMHoDdMwk6OzRv2oVhSFeY3qceY5RHArc=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d');

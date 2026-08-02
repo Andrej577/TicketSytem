@@ -264,7 +264,7 @@ public static class DatabaseMigrations
             VALUES (
                 '2d6781ce-863a-4ca4-83c3-c4d521f8e23d',
                 'admin@ticketsystem.local',
-                'pbkdf2-sha256$100000$lgmjqMVW/xj4j8oNTZkmJQ==$FCDoM5xmI0/o5IoxEzoMhClT9sNIazb13MmNk6Ih05s=',
+                'pbkdf2-sha256$100000$RO8HapBuTj1I3JY4K5bAbQ==$Nkd4+h0EWl6Ok0OhDce2zHa/OC5Ea0jWjEK9qjpyGzI=',
                 3,
                 now(),
                 now(),
@@ -324,10 +324,8 @@ public static class DatabaseMigrations
         return """
             INSERT INTO "AppUser" ("Email", "PasswordHash", "UserTypeId", "UpdatedByUserId")
             VALUES
-                ('customer1@ticketsystem.local', 'pbkdf2-sha256$100000$YUFcv4vEuLC/oP0DXytOfw==$qdLZall/krl8eqt8YauYy95IKdDayMHQcXCxjGhg3/0=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
-                ('customer2@ticketsystem.local', 'pbkdf2-sha256$100000$YpD12bK6eZYl72w0OcEeXA==$ejIdWPs6McK0WIkuG5PzK9cw+LXvqCJ76F33XKWfiQ4=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
-                ('support1@ticketsystem.local', 'pbkdf2-sha256$100000$bVeYhVewq6bgqstV7VxaYg==$sCeDxZbSVh9lZcMLZZfExy+4VLvAeZi8EekO/mcuWrM=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
-                ('support2@ticketsystem.local', 'pbkdf2-sha256$100000$hGz/qId57Ox8lR2MHCv5Ag==$ca952K+yHQFEDAwalyXwtTmOuuAviwh5y94EPCJLWt4=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d');
+                ('customer@ticketsystem.local', 'pbkdf2-sha256$100000$XGbMsSXce9qGP4itbrjmUw==$eTNpA8qYGtXqtBnAz7g/xU+NW/xW0lCBqoWxKCpzFk0=', 1, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d'),
+                ('operator@ticketsystem.local', 'pbkdf2-sha256$100000$vdyIol3+v7HKN9d3EmetCw==$MgG4JcY55yGMHoDdMwk6OzRv2oVhSFeY3qceY5RHArc=', 2, '2d6781ce-863a-4ca4-83c3-c4d521f8e23d');
             """;
     }
 
@@ -356,19 +354,15 @@ public static class DatabaseMigrations
             UPDATE "AppUser"
             SET
                 "FirstName" = CASE "Email"
-                    WHEN 'admin@ticketsystem.local' THEN 'Admin'
-                    WHEN 'customer1@ticketsystem.local' THEN 'Customer'
-                    WHEN 'customer2@ticketsystem.local' THEN 'Customer'
-                    WHEN 'support1@ticketsystem.local' THEN 'Support'
-                    WHEN 'support2@ticketsystem.local' THEN 'Support'
+                    WHEN 'admin@ticketsystem.local' THEN 'Nora'
+                    WHEN 'operator@ticketsystem.local' THEN 'Leo'
+                    WHEN 'customer@ticketsystem.local' THEN 'Maya'
                     ELSE split_part("Email", '@', 1)
                 END,
                 "LastName" = CASE "Email"
-                    WHEN 'admin@ticketsystem.local' THEN 'User'
-                    WHEN 'customer1@ticketsystem.local' THEN 'One'
-                    WHEN 'customer2@ticketsystem.local' THEN 'Two'
-                    WHEN 'support1@ticketsystem.local' THEN 'One'
-                    WHEN 'support2@ticketsystem.local' THEN 'Two'
+                    WHEN 'admin@ticketsystem.local' THEN 'Kessler'
+                    WHEN 'operator@ticketsystem.local' THEN 'Fischer'
+                    WHEN 'customer@ticketsystem.local' THEN 'Torres'
                     ELSE 'User'
                 END;
 

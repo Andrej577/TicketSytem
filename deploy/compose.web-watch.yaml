@@ -4,7 +4,6 @@ services:
       target: build
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      Authentication__EnableQuickLogin: ${ENABLE_QUICK_LOGIN:-true}
       DOTNET_USE_POLLING_FILE_WATCHER: "1"
     volumes:
       - ..:/src

@@ -34,7 +34,6 @@ JWT_ISSUER=TicketSystem.Api
 JWT_AUDIENCE=TicketSystem.Web
 JWT_SIGNING_KEY=replace-with-a-random-secret-of-at-least-32-characters
 REALTIME_INTERNAL_KEY=replace-with-a-different-random-secret-of-at-least-32-characters
-ENABLE_QUICK_LOGIN=true
 ```
 
 `deploy/.env` contains the following settings:
@@ -53,13 +52,22 @@ ENABLE_QUICK_LOGIN=true
 | `JWT_AUDIENCE` | No | `TicketSystem.Web` | `TicketSystem.Web` | JWT audience validated by the API. |
 | `JWT_SIGNING_KEY` | Yes | A random secret of at least 32 characters | None | Signs API access tokens. Never commit a real value. |
 | `REALTIME_INTERNAL_KEY` | Yes | A different random secret of at least 32 characters | None | Protects notifications sent internally from the API to Realtime. Never commit a real value. |
-| `ENABLE_QUICK_LOGIN` | No | `true` | `false` | Shows temporary test-account login buttons. Set to `false` outside local testing. |
 
 All ASP.NET containers listen on port `8080` internally. The Web container calls the API through `http://api:8080` and connects to SignalR through `http://realtime:8080`. The API connects to PostgreSQL through `database:5432` and sends protected notifications to Realtime. Host port settings do not change these internal addresses.
 
 The Web authentication cookie lasts eight hours. Its encryption keys are stored in the `web-data-protection` Docker volume, so active cookies remain valid when the standard Web container is recreated. Web hot reload uses a separate `web-watch-data-protection` volume.
 
-When `ENABLE_QUICK_LOGIN=true`, the login page shows buttons for the seeded Administrator, Customer, and Support accounts. This test-only feature uses the same cookie and JWT flow as the regular email/password form.
+## Seed accounts
+
+The migrations seed one account per role. Sign in with these on a fresh database, then create any further accounts from the Users page:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Administrator | `admin@ticketsystem.local` | `ChangeMe123!` |
+| Operator | `operator@ticketsystem.local` | `ChangeMe123!` |
+| Customer | `customer@ticketsystem.local` | `ChangeMe123!` |
+
+Change these passwords (or remove the accounts) before any public deployment.
 
 ## Standard startup
 

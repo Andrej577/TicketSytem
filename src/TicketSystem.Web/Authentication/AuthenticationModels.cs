@@ -12,10 +12,3 @@ public sealed class LoginForm
 
     public string? ReturnUrl { get; set; }
 }
-
-public sealed class QuickLoginForm
-{
-    public string Email { get; set; } = string.Empty;
-
-    public string? ReturnUrl { get; set; }
-}

@@ -10,21 +10,9 @@ namespace TicketSystem.Web.Authentication;
 
 public static class WebAuthenticationEndpoints
 {
-    private static readonly IReadOnlyDictionary<string, string> QuickLoginPasswords = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["admin@ticketsystem.local"] = "admin",
-        ["customer1@ticketsystem.local"] = "test123",
-        ["customer2@ticketsystem.local"] = "test123",
-        ["support1@ticketsystem.local"] = "test123",
-        ["support2@ticketsystem.local"] = "test123"
-    };
-
     public static IEndpointRouteBuilder MapWebAuthenticationEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapPost("/auth/login", LoginAsync)
-            .AllowAnonymous()
-            .WithMetadata(new RequireAntiforgeryTokenAttribute(true));
-        endpoints.MapPost("/auth/quick-login", QuickLoginAsync)
             .AllowAnonymous()
             .WithMetadata(new RequireAntiforgeryTokenAttribute(true));
         endpoints.MapPost("/auth/logout", (Delegate)LogoutAsync)
@@ -37,16 +25,6 @@ public static class WebAuthenticationEndpoints
     private static async Task<IResult> LoginAsync([FromForm] LoginForm form, HttpContext httpContext, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken)
     {
         return await SignInAsync(form.Email, form.Password, form.ReturnUrl, httpContext, httpClientFactory, cancellationToken);
-    }
-
-    private static async Task<IResult> QuickLoginAsync([FromForm] QuickLoginForm form, HttpContext httpContext, IConfiguration configuration, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken)
-    {
-        if (!configuration.GetValue<bool>("Authentication:EnableQuickLogin") || !QuickLoginPasswords.TryGetValue(form.Email, out var password))
-        {
-            return Results.NotFound();
-        }
-
-        return await SignInAsync(form.Email, password, form.ReturnUrl, httpContext, httpClientFactory, cancellationToken);
     }
 
     private static async Task<IResult> LogoutAsync(HttpContext httpContext)
