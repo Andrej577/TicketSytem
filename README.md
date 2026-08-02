@@ -1,6 +1,73 @@
 # Ticket System
 
-This repository contains a ticket system with PostgreSQL persistence, a Blazor Web application, an HTTP API, and a standalone SignalR host. The database schema is managed by ordered application migrations. PostgreSQL table and column identifiers use quoted PascalCase names that match their C# counterparts.
+A full-stack support ticket platform: a kanban-style ticket board, live per-ticket chat with file attachments, a knowledge base, and an analytics dashboard — built with Blazor Server, ASP.NET Core, PostgreSQL, and SignalR.
+
+## Screenshots
+
+**Dashboard** — status/priority breakdown, first-response-time trend, and a live recent-activity feed.
+
+![Dashboard](screenshots/dashboard.png)
+
+**Ticket board** — drag-and-drop kanban view grouped by status, with priority and age at a glance.
+
+![Ticket board](screenshots/tickets-list.png)
+
+**Ticket detail** — details, live chat, and attachments in one dialog.
+
+![Ticket dialog](screenshots/ticket-dialog.png)
+
+## Features
+
+- **Kanban ticket board** with drag-and-drop status changes, filtered by priority
+- **Live chat per ticket** over SignalR, with file attachments and a full media library per conversation
+- **Analytics dashboard** — ticket status/priority breakdown, first-response-time trend, recent activity feed, configurable date range
+- **Knowledge base** with draft / published / archived article workflow
+- **Role-based access** — Administrator, Operator, and Customer, each scoped to what they need
+- **Dark mode**
+
+## Tech stack
+
+- **Web**: Blazor Server (.NET 8) with MudBlazor
+- **API**: ASP.NET Core minimal APIs
+- **Realtime**: standalone JWT-secured SignalR host
+- **Database**: PostgreSQL, with hand-written ordered SQL migrations (no ORM)
+
+## Getting started
+
+Run the full stack with Docker:
+
+```powershell
+Copy-Item deploy/.env.example deploy/.env
+docker compose --env-file deploy/.env -f deploy/compose.yaml up -d --build
+```
+
+Open `http://localhost:8180` and sign in with one of the seed accounts:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Administrator | `admin@ticketsystem.local` | `ChangeMe123!` |
+| Operator | `operator@ticketsystem.local` | `ChangeMe123!` |
+| Customer | `customer@ticketsystem.local` | `ChangeMe123!` |
+
+Change or remove these before any public deployment. To populate the board with realistic demo tickets like the screenshots above, run [`test-data.sql`](test-data.sql) against the database afterward.
+
+See [`deploy/README.md`](deploy/README.md) for the full Docker reference: environment variables, Web hot reload, individual service rebuilds, and resetting the database.
+
+### Visual Studio
+
+Open `TicketSystem.sln` in Visual Studio 2022 and select the `TicketSystem Web + Realtime` launch profile. Starting that profile launches both projects:
+
+- `TicketSystem.Web` on `https://localhost:7097` and `http://localhost:5047`.
+- `TicketSystem.Realtime` on `https://localhost:7197` and `http://localhost:5057`.
+
+The SignalR hub URLs are:
+
+```text
+https://localhost:7197/hubs/chat
+https://localhost:7197/hubs/tickets
+https://localhost:7197/hubs/app-users
+https://localhost:7197/hubs/knowledge
+```
 
 ## Files
 
@@ -8,6 +75,7 @@ This repository contains a ticket system with PostgreSQL persistence, a Blazor W
 - `src/TicketSystem.Api` - ASP.NET Core HTTP API that applies pending database migrations during startup.
 - `src/TicketSystem.DAL/Database/DatabaseMigrations.cs` - ordered PostgreSQL schema migrations.
 - `schema.sql` - standalone mirror of the current schema after all migrations for creating or inspecting an empty database.
+- `test-data.sql` - optional showcase seed data (demo tickets, chat history, knowledge articles).
 - `src/TicketSystem.Shared` - DTOs and enums shared by the API and Web projects.
 - `global.json` - pins the local SDK to .NET 8 for Visual Studio 2022 compatibility.
 - `src/TicketSystem.Web` - Blazor Web App project configured for MudBlazor and server interactivity.
@@ -27,26 +95,6 @@ Current setup:
 - `TicketSystem.Realtime` owns the authenticated AppUser, Chat, Knowledge, and Ticket SignalR hubs.
 - `TicketSystem.Api` persists changes and publishes ID-only notifications to Realtime through a protected internal endpoint.
 - Connected Web pages receive the notification and fetch authorized data through the API.
-
-## Visual Studio Launch
-
-Open `TicketSystem.sln` in Visual Studio 2022 and select the `TicketSystem Web + Realtime` launch profile. Starting that profile launches both projects:
-
-- `TicketSystem.Web` on `https://localhost:7097` and `http://localhost:5047`.
-- `TicketSystem.Realtime` on `https://localhost:7197` and `http://localhost:5057`.
-
-The SignalR hub URLs are:
-
-```text
-https://localhost:7197/hubs/chat
-https://localhost:7197/hubs/tickets
-https://localhost:7197/hubs/app-users
-https://localhost:7197/hubs/knowledge
-```
-
-## Docker
-
-See [`deploy/README.md`](deploy/README.md) for every Docker environment setting and command, including complete stack startup, individual service rebuilds, database reset, and automatic Web reload with `dotnet watch`.
 
 ## Data Model
 
@@ -101,6 +149,15 @@ The `Ticket` table represents a concrete support request.
 
 In the simple flow, one ticket has one chat session. If multiple conversations are needed for the same ticket later, the relationship can be adjusted so that `ChatSession` contains a `TicketId` reference.
 
+### TicketStatusHistory
+
+The `TicketStatusHistory` table records every status transition a ticket goes through, driving the dashboard's recent-activity feed.
+
+- `TicketId` references the ticket that changed and references `Ticket.Id`.
+- `OldStatusId` and `NewStatusId` reference `TicketStatus.Id`.
+- `ChangedByUserId` identifies who made the change and references `AppUser.Id`.
+- `ChangedAt` stores when the change happened.
+
 ### Message
 
 The `Message` table stores chat history.
@@ -120,6 +177,16 @@ The `MessageRead` table stores per-user read receipts.
 - `ReadAt` stores the read time.
 
 This is more flexible than a single read flag on `Message`, because the same conversation can be read by a customer, an operator, and an administrator.
+
+### MediaFile
+
+The `MediaFile` table stores file attachments shared in a chat session.
+
+- `ChatSessionId` identifies the conversation the file was shared in and references `ChatSession.Id`.
+- `UploadedByUserId` identifies who uploaded the file and references `AppUser.Id`.
+- `Name`, `Extension`, and `ContentType` describe the file.
+- `SizeBytes` and `Content` store the size and raw bytes; a size constraint caps attachments at 10 MB.
+- `CreatedAt` stores the upload time.
 
 ### Knowledge
 
