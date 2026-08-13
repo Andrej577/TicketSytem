@@ -12,3 +12,5 @@
 ## Napomena za review
 
 <!-- Dodaj poznate rizike, edge caseove ili dio koda koji posebno treba pregledati. -->
+
+- [ ] U PR komentar je poslan `@codex review`
