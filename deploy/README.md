@@ -38,20 +38,20 @@ REALTIME_INTERNAL_KEY=replace-with-a-different-random-secret-of-at-least-32-char
 
 `deploy/.env` contains the following settings:
 
-| Variable | Required | Example value | Compose fallback | Purpose |
-| --- | --- | --- | --- | --- |
-| `POSTGRES_DATABASE` | No | `ticket_system` | `ticket_system` | PostgreSQL database name. |
-| `POSTGRES_USER` | No | `user` | `ticket_system` | PostgreSQL user name. |
-| `POSTGRES_PASSWORD` | Yes | `passwd` | None | PostgreSQL password. Replace the example value. |
-| `POSTGRES_PORT` | No | `5432` | `5432` | PostgreSQL port exposed on the host. |
-| `WEB_PORT` | No | `8180` | `8180` | Web port exposed on the host. |
-| `WEB_ORIGIN` | No | `http://localhost:8180` | `http://localhost:8180` | Browser origin allowed by the Realtime service. Update it when `WEB_PORT` or the public URL changes. |
-| `API_PORT` | No | `8081` | `8081` | API port exposed on the host. |
-| `REALTIME_PORT` | No | `8082` | `8082` | Realtime port exposed on the host. |
-| `JWT_ISSUER` | No | `TicketSystem.Api` | `TicketSystem.Api` | JWT issuer used by the API. |
-| `JWT_AUDIENCE` | No | `TicketSystem.Web` | `TicketSystem.Web` | JWT audience validated by the API. |
-| `JWT_SIGNING_KEY` | Yes | A random secret of at least 32 characters | None | Signs API access tokens. Never commit a real value. |
-| `REALTIME_INTERNAL_KEY` | Yes | A different random secret of at least 32 characters | None | Protects notifications sent internally from the API to Realtime. Never commit a real value. |
+| Variable                | Required | Example value                                       | Compose fallback        | Purpose                                                                                              |
+| ----------------------- | -------- | --------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `POSTGRES_DATABASE`     | No       | `ticket_system`                                     | `ticket_system`         | PostgreSQL database name.                                                                            |
+| `POSTGRES_USER`         | No       | `user`                                              | `ticket_system`         | PostgreSQL user name.                                                                                |
+| `POSTGRES_PASSWORD`     | Yes      | `passwd`                                            | None                    | PostgreSQL password. Replace the example value.                                                      |
+| `POSTGRES_PORT`         | No       | `5432`                                              | `5432`                  | PostgreSQL port exposed on the host.                                                                 |
+| `WEB_PORT`              | No       | `8180`                                              | `8180`                  | Web port exposed on the host.                                                                        |
+| `WEB_ORIGIN`            | No       | `http://localhost:8180`                             | `http://localhost:8180` | Browser origin allowed by the Realtime service. Update it when `WEB_PORT` or the public URL changes. |
+| `API_PORT`              | No       | `8081`                                              | `8081`                  | API port exposed on the host.                                                                        |
+| `REALTIME_PORT`         | No       | `8082`                                              | `8082`                  | Realtime port exposed on the host.                                                                   |
+| `JWT_ISSUER`            | No       | `TicketSystem.Api`                                  | `TicketSystem.Api`      | JWT issuer used by the API.                                                                          |
+| `JWT_AUDIENCE`          | No       | `TicketSystem.Web`                                  | `TicketSystem.Web`      | JWT audience validated by the API.                                                                   |
+| `JWT_SIGNING_KEY`       | Yes      | A random secret of at least 32 characters           | None                    | Signs API access tokens. Never commit a real value.                                                  |
+| `REALTIME_INTERNAL_KEY` | Yes      | A different random secret of at least 32 characters | None                    | Protects notifications sent internally from the API to Realtime. Never commit a real value.          |
 
 All ASP.NET containers listen on port `8080` internally. The Web container calls the API through `http://api:8080` and connects to SignalR through `http://realtime:8080`. The API connects to PostgreSQL through `database:5432` and sends protected notifications to Realtime. Host port settings do not change these internal addresses.
 
@@ -61,11 +61,11 @@ The Web authentication cookie lasts eight hours. Its encryption keys are stored 
 
 The migrations seed one account per role. Sign in with these on a fresh database, then create any further accounts from the Users page:
 
-| Role | Email | Password |
-| --- | --- | --- |
-| Administrator | `admin@ticketsystem.local` | `ChangeMe123!` |
-| Operator | `operator@ticketsystem.local` | `ChangeMe123!` |
-| Customer | `customer@ticketsystem.local` | `ChangeMe123!` |
+| Role          | Email                         | Password       |
+| ------------- | ----------------------------- | -------------- |
+| Administrator | `admin@ticketsystem.local`    | `ChangeMe123!` |
+| Operator      | `operator@ticketsystem.local` | `ChangeMe123!` |
+| Customer      | `customer@ticketsystem.local` | `ChangeMe123!` |
 
 Change these passwords (or remove the accounts) before any public deployment.
 
