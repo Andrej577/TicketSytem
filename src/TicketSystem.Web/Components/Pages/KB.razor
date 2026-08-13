@@ -37,7 +37,7 @@
         else
         {
             <MudPaper Outlined="true" Class="pa-4">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <div class="knowledge-filter-row @(_hasActiveFilters ? "has-clear-filter" : string.Empty)">
                     <MudTextField T="string"
                                   @bind-Value="_searchText"
                                   Placeholder="Search articles..."
@@ -45,38 +45,41 @@
                                   Margin="Margin.Dense"
                                   Immediate="true"
                                   Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Outlined.Search"
-                                  Style="flex: 1 1 auto;" />
-                    <MudSelect T="short?"
-                               Label="Status"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Dense"
-                               @bind-Value="_statusFilter"
-                               Clearable="true"
-                               Style="width: 200px;">
-                        @foreach (var status in _statuses)
-                        {
-                            <MudSelectItem T="short?" Value="@((short?)status.Id)">@status.Name</MudSelectItem>
-                        }
-                    </MudSelect>
-                    <MudSelect T="Guid?"
-                               Label="Category"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Dense"
-                               @bind-Value="_categoryFilter"
-                               Clearable="true"
-                               Disabled="@(_categories.Count == 0)"
-                               Style="width: 220px;">
-                        @foreach (var category in _categories)
-                        {
-                            <MudSelectItem T="Guid?" Value="@((Guid?)category.Id)">@category.Name</MudSelectItem>
-                        }
-                    </MudSelect>
+                                  AdornmentIcon="@Icons.Material.Outlined.Search" />
+                    <div class="knowledge-filter-group">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                        <div class="knowledge-filter-toggle-group">
+                            @foreach (var status in _statuses)
+                            {
+                                <MudButton Variant="@GetFilterButtonVariant(_statusFilters.Contains(status.Id))"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => ToggleStatusFilter(status.Id))">
+                                    @status.Name
+                                </MudButton>
+                            }
+                        </div>
+                    </div>
+                    <div class="knowledge-filter-group">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Category</MudText>
+                        <div class="knowledge-filter-toggle-group">
+                            @foreach (var category in _categories)
+                            {
+                                <MudButton Variant="@GetFilterButtonVariant(_categoryFilters.Contains(category.Id))"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           Disabled="@(_categories.Count == 0)"
+                                           OnClick="@(() => ToggleCategoryFilter(category.Id))">
+                                    @category.Name
+                                </MudButton>
+                            }
+                        </div>
+                    </div>
                     @if (_hasActiveFilters)
                     {
-                        <MudIconButton Icon="@Icons.Material.Outlined.FilterAltOff" Color="Color.Primary" OnClick="ClearFilters" aria-label="Clear filters" />
+                        <MudIconButton Class="knowledge-filter-clear" Icon="@Icons.Material.Outlined.FilterAltOff" Color="Color.Primary" OnClick="ClearFilters" aria-label="Clear filters" />
                     }
-                </MudStack>
+                </div>
             </MudPaper>
 
             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
@@ -167,8 +170,8 @@
     private List<KnowledgeStatusDTO> _statuses = [];
     private HubConnection? _knowledgeHubConnection;
     private IDisposable? _knowledgeChangedSubscription;
-    private Guid? _categoryFilter;
-    private short? _statusFilter;
+    private IReadOnlyCollection<Guid> _categoryFilters = [];
+    private IReadOnlyCollection<short> _statusFilters = [];
     private string _searchText = string.Empty;
     private string? _loadErrorMessage;
     private bool _isAdministrator;
@@ -179,7 +182,7 @@
         .OrderByDescending(article => article.UpdatedAt)
         .ToList();
 
-    private bool _hasActiveFilters => !string.IsNullOrWhiteSpace(_searchText) || _statusFilter is not null || _categoryFilter is not null;
+    private bool _hasActiveFilters => !string.IsNullOrWhiteSpace(_searchText) || _statusFilters.Count > 0 || _categoryFilters.Count > 0;
 
     private string _visibleArticleTotalText => _visibleArticles.Count == 1 ? "1 article" : $"{_visibleArticles.Count} articles";
 
@@ -342,12 +345,12 @@
 
     private bool MatchesFilters(KnowledgePOCO article)
     {
-        if (_statusFilter is not null && article.StatusId != _statusFilter)
+        if (_statusFilters.Count > 0 && !_statusFilters.Contains(article.StatusId))
         {
             return false;
         }
 
-        if (_categoryFilter is not null && article.CategoryId != _categoryFilter)
+        if (_categoryFilters.Count > 0 && (!article.CategoryId.HasValue || !_categoryFilters.Contains(article.CategoryId.Value)))
         {
             return false;
         }
@@ -368,8 +371,27 @@
     private void ClearFilters()
     {
         _searchText = string.Empty;
-        _statusFilter = null;
-        _categoryFilter = null;
+        _statusFilters = [];
+        _categoryFilters = [];
+    }
+
+    private void ToggleStatusFilter(short statusId)
+    {
+        _statusFilters = _statusFilters.Contains(statusId)
+            ? _statusFilters.Where(value => value != statusId).ToArray()
+            : [.. _statusFilters, statusId];
+    }
+
+    private void ToggleCategoryFilter(Guid categoryId)
+    {
+        _categoryFilters = _categoryFilters.Contains(categoryId)
+            ? _categoryFilters.Where(value => value != categoryId).ToArray()
+            : [.. _categoryFilters, categoryId];
+    }
+
+    private static Variant GetFilterButtonVariant(bool isSelected)
+    {
+        return isSelected ? Variant.Filled : Variant.Outlined;
     }
 
     private static string GetContentPreview(string content)

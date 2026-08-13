@@ -169,7 +169,7 @@
                                 <MudMenu Dense="true" AnchorOrigin="Origin.TopLeft" TransformOrigin="Origin.BottomLeft">
                                     <ActivatorContent>
                                         <MudTooltip Text="Dodaj privitak">
-                                            <MudFab Color="Color.Primary" Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" OnClick="@context.ToggleAsync" Disabled="@(_isChatClosed || _isSendingMessage)" aria-label="Dodaj privitak" />
+                                            <MudFab Color="Color.Primary" DropShadow="false" Size="Size.Small" StartIcon="@Icons.Material.Filled.Add" OnClick="@context.ToggleAsync" Disabled="@(_isChatClosed || _isSendingMessage)" aria-label="Dodaj privitak" />
                                         </MudTooltip>
                                     </ActivatorContent>
                                     <ChildContent>
@@ -189,7 +189,7 @@
                                 </MudMenu>
                                 <MudTextField @ref="_messageTextField" T="string" Label="Message" @bind-Value="_newMessage" Immediate="true" OnKeyDown="HandleMessageKeyDownAsync" Variant="Variant.Outlined" Lines="1" Sizing="InputSizing.Auto" Disabled="_isChatClosed" Class="flex-grow-1" />
                                 <MudTooltip Text="Pošalji poruku">
-                                    <MudFab Color="Color.Primary" Size="Size.Small" StartIcon="@AppIcons.Actions.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || (string.IsNullOrWhiteSpace(_newMessage) && _pendingFiles.Count == 0))" aria-label="Pošalji poruku" />
+                                    <MudFab Color="Color.Primary" DropShadow="false" Size="Size.Small" StartIcon="@AppIcons.Actions.Send" OnClick="SendMessageAsync" Disabled="@(_isChatClosed || _isSendingMessage || (string.IsNullOrWhiteSpace(_newMessage) && _pendingFiles.Count == 0))" aria-label="Pošalji poruku" />
                                 </MudTooltip>
                             </MudStack>
 

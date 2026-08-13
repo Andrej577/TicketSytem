@@ -1,7 +1,7 @@
 @implements IDisposable
 @inject LoadingState LoadingState
 
-<MudOverlay Visible="@LoadingState.IsLoading" DarkBackground="true" Absolute="false" ZIndex="9999" RenderOutsideOfSection="true">
+<MudOverlay Visible="@LoadingState.IsLoading" DarkBackground="true" Absolute="false" ZIndex="9999">
     <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
 </MudOverlay>
 

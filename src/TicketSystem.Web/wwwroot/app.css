@@ -16,3 +16,52 @@
     right: .75rem;
     cursor: pointer;
 }
+
+.knowledge-filter-row {
+    display: grid;
+    grid-template-columns: minmax(220px, .8fr) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+    width: 100%;
+}
+
+.knowledge-filter-row.has-clear-filter {
+    grid-template-columns: minmax(220px, .8fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.knowledge-filter-row .mud-input-control {
+    width: 100%;
+    min-width: 0;
+}
+
+.knowledge-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.knowledge-filter-toggle-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.knowledge-filter-toggle-group .mud-toggle-item {
+    border-radius: 4px;
+}
+
+.knowledge-filter-clear {
+    justify-self: end;
+}
+
+@media (max-width: 768px) {
+    .knowledge-filter-row,
+    .knowledge-filter-row.has-clear-filter {
+        grid-template-columns: 1fr;
+    }
+
+    .knowledge-filter-clear {
+        justify-self: start;
+    }
+}

@@ -353,7 +353,11 @@
 
     private async Task HandleTicketDroppedAsync(MudItemDropInfo<TicketPOCO> dropInfo)
     {
-        var ticket = dropInfo.Item;
+        if (dropInfo.Item is not { } ticket)
+        {
+            return;
+        }
+
         var newStatusId = short.Parse(dropInfo.DropzoneIdentifier, CultureInfo.InvariantCulture);
 
         if (ticket.StatusId == newStatusId || !CanEditTicket(ticket))
