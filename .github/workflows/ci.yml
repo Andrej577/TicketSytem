@@ -4,10 +4,6 @@ on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - development
-      - main
 
 permissions:
   contents: read
@@ -15,7 +11,6 @@ permissions:
 jobs:
   commit-message:
     name: Validate commit messages
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -38,7 +33,7 @@ jobs:
               echo "Commit message is longer than 72 characters: $message"
               exit 1
             fi
-          done < <(git log --format=%s "origin/${{ github.base_ref }}..HEAD")
+          done < <(git log --format=%s "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}")
 
   compose-config:
     name: Validate Docker Compose configuration
