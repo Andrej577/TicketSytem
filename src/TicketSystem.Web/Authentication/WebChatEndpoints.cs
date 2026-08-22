@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using TicketSystem.Shared.Authentication;
 
 namespace TicketSystem.Web.Authentication;
 

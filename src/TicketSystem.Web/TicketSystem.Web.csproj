@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <ProjectReference Include="..\TicketSystem.Client\TicketSystem.Client.csproj" />
     <ProjectReference Include="..\TicketSystem.Shared\TicketSystem.Shared.csproj" />
+    <ProjectReference Include="..\TicketSystem.SharedUI\TicketSystem.SharedUI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

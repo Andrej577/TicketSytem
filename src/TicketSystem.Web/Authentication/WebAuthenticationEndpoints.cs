@@ -1,9 +1,10 @@
-using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using TicketSystem.Client.Authentication;
+using TicketSystem.Shared.Authentication;
 using TicketSystem.Shared.Enums;
 
 namespace TicketSystem.Web.Authentication;
@@ -22,9 +23,9 @@ public static class WebAuthenticationEndpoints
         return endpoints;
     }
 
-    private static async Task<IResult> LoginAsync([FromForm] LoginForm form, HttpContext httpContext, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken)
+    private static async Task<IResult> LoginAsync([FromForm] LoginForm form, HttpContext httpContext, TicketSystemAuthenticationClient authenticationClient, CancellationToken cancellationToken)
     {
-        return await SignInAsync(form.Email, form.Password, form.ReturnUrl, httpContext, httpClientFactory, cancellationToken);
+        return await SignInAsync(form.Email, form.Password, form.ReturnUrl, httpContext, authenticationClient, cancellationToken);
     }
 
     private static async Task<IResult> LogoutAsync(HttpContext httpContext)
@@ -33,40 +34,18 @@ public static class WebAuthenticationEndpoints
         return Results.LocalRedirect("/login");
     }
 
-    private static async Task<IResult> SignInAsync(string email, string password, string? returnUrl, HttpContext httpContext, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken)
+    private static async Task<IResult> SignInAsync(string email, string password, string? returnUrl, HttpContext httpContext, TicketSystemAuthenticationClient authenticationClient, CancellationToken cancellationToken)
     {
         try
         {
-            var client = httpClientFactory.CreateClient("TicketSystemApi");
-            using var response = await client.PostAsJsonAsync("api/auth/login", new ApiLoginRequest(email, password), cancellationToken);
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            var loginResponse = await authenticationClient.LoginAsync(new LoginRequest(email, password), cancellationToken);
+            if (loginResponse is null)
             {
                 return LoginRedirect("invalid", returnUrl);
             }
 
-            if (!response.IsSuccessStatusCode)
-            {
-                return LoginRedirect("unavailable", returnUrl);
-            }
-
-            var loginResponse = await response.Content.ReadFromJsonAsync<ApiLoginResponse>(cancellationToken);
-            if (loginResponse is null)
-            {
-                return LoginRedirect("unavailable", returnUrl);
-            }
-
             var role = ((AppUserType)loginResponse.UserTypeId).ToString();
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, loginResponse.UserId.ToString()),
-                new Claim(ClaimTypes.Name, $"{loginResponse.FirstName} {loginResponse.LastName}"),
-                new Claim(ClaimTypes.GivenName, loginResponse.FirstName),
-                new Claim(ClaimTypes.Surname, loginResponse.LastName),
-                new Claim(ClaimTypes.Email, loginResponse.Email),
-                new Claim(ClaimTypes.Role, role),
-                new Claim(TicketSystemClaimTypes.ApiAccessToken, loginResponse.AccessToken)
-            };
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
+            var principal = TicketSystemClaimsPrincipalFactory.Create(loginResponse, CookieAuthenticationDefaults.AuthenticationScheme);
             var properties = new AuthenticationProperties
             {
                 IsPersistent = true,

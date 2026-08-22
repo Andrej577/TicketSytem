@@ -1,0 +1,72 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@inject TicketSystem.Client.Authentication.TicketSystemAuthenticationClient AuthenticationClient
+@inject TicketSystem.Client.Authentication.TicketSystemAuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<PageTitle>Login | Ticket System</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="pa-8">
+    <MudPaper Class="pa-8">
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h4">Login</MudText>
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+            }
+
+            <EditForm OnValidSubmit="LoginAsync" Model="_loginInput">
+                <MudStack Spacing="3">
+                    <MudTextField T="string" Label="Email" @bind-Value="_loginInput.Email" InputType="InputType.Email" Variant="Variant.Outlined" Required="true" />
+                    <MudTextField T="string" Label="Password" @bind-Value="_loginInput.Password" InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Disabled="@_isSubmitting">Login</MudButton>
+                </MudStack>
+            </EditForm>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private readonly LoginInput _loginInput = new();
+    private string? _errorMessage;
+    private bool _isSubmitting;
+
+    private async Task LoginAsync()
+    {
+        _isSubmitting = true;
+        _errorMessage = null;
+
+        try
+        {
+            var loginResponse = await AuthenticationClient.LoginAsync(new TicketSystem.Shared.Authentication.LoginRequest(_loginInput.Email, _loginInput.Password));
+            if (loginResponse is null)
+            {
+                _errorMessage = "Email or password is incorrect.";
+                return;
+            }
+
+            await AuthenticationStateProvider.SignInAsync(loginResponse);
+            Navigation.NavigateTo(loginResponse.UserTypeId == (int)AppUserType.Administrator ? "/" : "/tickets");
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage = "Login is currently unavailable.";
+        }
+        catch (JsonException)
+        {
+            _errorMessage = "Login is currently unavailable.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private sealed class LoginInput
+    {
+        public string Email { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
+    }
+}

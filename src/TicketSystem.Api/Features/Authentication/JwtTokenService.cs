@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using TicketSystem.DAL.AppUsers;
+using TicketSystem.Shared.Authentication;
 using TicketSystem.Shared.Enums;
 
 namespace TicketSystem.Api.Features.Authentication;

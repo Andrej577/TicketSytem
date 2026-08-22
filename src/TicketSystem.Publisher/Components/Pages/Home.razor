@@ -1,0 +1,93 @@
+@page "/"
+
+<PageTitle>Ticket System Publisher</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="publisher-shell">
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="0" Class="@GetEnvironmentCardClass(PublisherEnvironment.Local)" @onclick="() => SelectEnvironment(PublisherEnvironment.Local)">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudText Typo="Typo.h6">Local build</MudText>
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small">Ready</MudChip>
+                </MudStack>
+                <MudText Typo="Typo.body2" Class="mt-3">Docker + Release publish for Web, Windows, and Android.</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="0" Class="@GetEnvironmentCardClass(PublisherEnvironment.Test)" @onclick="() => SelectEnvironment(PublisherEnvironment.Test)">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudText Typo="Typo.h6">Test build</MudText>
+                    <MudChip T="string" Color="Color.Default" Size="Size.Small">Coming soon</MudChip>
+                </MudStack>
+                <MudText Typo="Typo.body2" Class="mt-3">The option is visible, but its logic is not available yet.</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="0" Class="@GetEnvironmentCardClass(PublisherEnvironment.Production)" @onclick="() => SelectEnvironment(PublisherEnvironment.Production)">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudText Typo="Typo.h6">Production build</MudText>
+                    <MudChip T="string" Color="Color.Default" Size="Size.Small">Coming soon</MudChip>
+                </MudStack>
+                <MudText Typo="Typo.body2" Class="mt-3">The option is visible, but its logic is not available yet.</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    @if (_isRunning)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mt-6" />
+    }
+
+    @if (_blockingError is not null)
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mt-6">@_blockingError</MudAlert>
+    }
+
+    @if (_completed)
+    {
+        <MudAlert Severity="Severity.Success" Variant="Variant.Outlined" Class="mt-6">
+            Everything is ready for testing. Publish files are in <span class="artifact-path">artifacts/local</span>.
+        </MudAlert>
+    }
+
+    <MudText Typo="Typo.h5" Class="mt-8 mb-4">Local build progress</MudText>
+
+    <div class="publish-timeline-scroll">
+        <MudTimeline TimelineOrientation="TimelineOrientation.Horizontal" TimelinePosition="TimelinePosition.Top" TimelineAlign="TimelineAlign.Start" Class="publish-timeline">
+            @foreach (var step in _steps)
+            {
+                <MudTimelineItem @key="step.Id" Color="@GetStepColor(step.Status)" Variant="Variant.Filled" Size="Size.Medium">
+                    <ItemDot>
+                        <MudIcon Class="publish-timeline-icon" Icon="@GetStepIcon(step.Id)" Size="Size.Medium" Color="Color.Inherit" />
+                    </ItemDot>
+                    <ItemContent>
+                        <MudStack Class="timeline-step-content" Spacing="1">
+                            <MudStack Class="timeline-step-title" Spacing="0">
+                                <MudText Typo="Typo.subtitle1">@step.Title</MudText>
+                            </MudStack>
+                            <MudStack Class="timeline-step-description" Spacing="0">
+                                <MudText Typo="Typo.body2" Color="Color.Default">@step.Description</MudText>
+                            </MudStack>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Class="timeline-step-status" Spacing="0">
+                                <MudChip T="string" Color="@GetStepColor(step.Status)" Size="Size.Small">@GetStepStatusText(step.Status)</MudChip>
+                            </MudStack>
+                            @if (step.ErrorMessage is not null)
+                            {
+                                <MudAlert Severity="Severity.Error" Variant="Variant.Text" Class="step-error">@step.ErrorMessage</MudAlert>
+                            }
+                        </MudStack>
+                    </ItemContent>
+                </MudTimelineItem>
+            }
+        </MudTimeline>
+    </div>
+
+    <div class="action-row">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="RunLocalBuildAsync" Disabled="_isRunning">
+            Build and launch all
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Large" StartIcon="@Icons.Material.Filled.Stop" OnClick="CancelBuild" Disabled="@(!_isRunning)">
+            Stop
+        </MudButton>
+    </div>
+</MudContainer>

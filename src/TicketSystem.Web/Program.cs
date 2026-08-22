@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using MudBlazor.Services;
+using TicketSystem.Client;
+using TicketSystem.Client.Authentication;
 using TicketSystem.Web.Authentication;
 using TicketSystem.Web.Components;
-using TicketSystem.Web.Services;
+using TicketSystem.SharedUI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,7 +45,23 @@ builder.Services.AddHttpClient("TicketSystemApi", client =>
 
     client.BaseAddress = new Uri(baseUrl);
 });
-builder.Services.AddScoped<TicketSystemApiClient>();
+builder.Services.AddHttpClient<TicketSystemAuthenticationClient>(client =>
+{
+    var baseUrl = builder.Configuration["Api:BaseUrl"]
+        ?? throw new InvalidOperationException("The 'Api:BaseUrl' configuration value is required.");
+
+    client.BaseAddress = new Uri(baseUrl);
+});
+builder.Services.AddHttpClient<TicketSystemApiClient>(client =>
+{
+    var baseUrl = builder.Configuration["Api:BaseUrl"]
+        ?? throw new InvalidOperationException("The 'Api:BaseUrl' configuration value is required.");
+
+    client.BaseAddress = new Uri(baseUrl);
+});
+builder.Services.AddScoped<IAccessTokenProvider, WebAccessTokenProvider>();
+builder.Services.AddScoped<IApiUnauthorizedHandler, WebApiUnauthorizedHandler>();
+builder.Services.AddScoped<IMediaFileDownloadService, WebMediaFileDownloadService>();
 
 var app = builder.Build();
 
