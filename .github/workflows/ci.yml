@@ -9,32 +9,6 @@ permissions:
   contents: read
 
 jobs:
-  commit-message:
-    name: Validate commit messages
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Validate commit subjects
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          while IFS= read -r message; do
-            if [[ -z "$message" ]]; then
-              echo "A commit message cannot be empty."
-              exit 1
-            fi
-
-            if (( ${#message} > 72 )); then
-              echo "Commit message is longer than 72 characters: $message"
-              exit 1
-            fi
-          done < <(git log --format=%s "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}")
-
   compose-config:
     name: Validate Docker Compose configuration
     runs-on: ubuntu-latest

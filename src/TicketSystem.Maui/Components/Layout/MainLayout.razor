@@ -1,0 +1,89 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject TicketSystem.Client.Authentication.TicketSystemAuthenticationStateProvider AuthenticationStateProvider
+@inject TicketSystem.SharedUI.Services.ThemeState ThemeState
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+<MudThemeProvider Theme="_theme" IsDarkMode="@ThemeState.IsDarkMode" ObserveSystemDarkModeChange="false" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<TicketSystem.SharedUI.Components.LoadingOverlay />
+
+<MudLayout>
+    <MudAppBar>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudText Typo="Typo.h6">Ticket System</MudText>
+            <AuthorizeView Roles="@nameof(AppUserType.Administrator)">
+                <MudButton Href="/" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@AppIcons.Navigation.Overview">Overview</MudButton>
+            </AuthorizeView>
+            <AuthorizeView>
+                <Authorized>
+                    <MudButton Href="/tickets" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@AppIcons.Navigation.Tickets">Tickets</MudButton>
+                </Authorized>
+            </AuthorizeView>
+            <AuthorizeView Roles="@nameof(AppUserType.Administrator)">
+                <MudButton Href="/users" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@AppIcons.Navigation.Users">Users</MudButton>
+            </AuthorizeView>
+            <AuthorizeView Roles="Operator,Administrator">
+                <MudButton Href="/knowledge-base" Variant="Variant.Text" Color="Color.Inherit" StartIcon="@AppIcons.Navigation.KnowledgeBase">Knowledge base</MudButton>
+            </AuthorizeView>
+        </MudStack>
+        <MudSpacer />
+        <AuthorizeView>
+            <Authorized Context="authenticationState">
+                <MudButton Variant="Variant.Text" Color="Color.Inherit" OnClick="LogoutAsync">
+                    @authenticationState.User.Identity?.Name · Logout
+                </MudButton>
+            </Authorized>
+        </AuthorizeView>
+    </MudAppBar>
+
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ThemeState.Changed += HandleThemeChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ThemeState.InitializeAsync(JSRuntime);
+        }
+    }
+
+    private void HandleThemeChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Secondary = "#0288D1"
+        },
+        PaletteDark = new PaletteDark
+        {
+            Secondary = "#29B6F6"
+        }
+    };
+
+    private async Task LogoutAsync()
+    {
+        await AuthenticationStateProvider.SignOutAsync();
+        Navigation.NavigateTo("/login");
+    }
+
+    public void Dispose()
+    {
+        ThemeState.Changed -= HandleThemeChanged;
+    }
+}

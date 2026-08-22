@@ -1,5 +1,6 @@
 using TicketSystem.Api.Features.AppUsers;
 using TicketSystem.DAL.AppUsers;
+using TicketSystem.Shared.Authentication;
 
 namespace TicketSystem.Api.Features.Authentication;
 

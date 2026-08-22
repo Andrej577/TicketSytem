@@ -1,0 +1,117 @@
+html, body {
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: Inter, "Segoe UI", sans-serif;
+    margin: 0;
+    min-height: 100%;
+}
+
+.loading-shell {
+    align-items: center;
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+}
+
+.publisher-shell {
+    padding-bottom: 48px;
+    padding-top: 40px;
+}
+
+.publisher-header {
+    margin-bottom: 28px;
+}
+
+.environment-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    height: 100%;
+    padding: 20px;
+}
+
+.environment-card-selectable {
+    cursor: pointer;
+}
+
+.environment-card-selected {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 1px #2563eb;
+}
+
+.environment-card-disabled {
+    background: #172033;
+    color: #94a3b8;
+}
+
+.publish-timeline-scroll {
+    margin-top: -40px;
+    overflow-x: auto;
+    padding: 16px 8px 24px;
+}
+
+.publish-timeline {
+    min-width: 1080px;
+    padding: 16px 8px 0;
+}
+
+.publish-timeline.mud-timeline-horizontal.mud-timeline-position-top::before {
+    bottom: auto !important;
+    top: 62px !important;
+}
+
+.publish-timeline .mud-timeline-item-dot-inner {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+
+.publish-timeline-icon {
+    color: #ffffff !important;
+}
+
+.timeline-step-content {
+    display: flex;
+    flex-direction: column;
+    max-width: 165px;
+    min-width: 140px;
+    min-height: 190px;
+}
+
+.timeline-step-title {
+    height: 48px;
+}
+
+.timeline-step-description {
+    height: 100px;
+    margin-top: 4px;
+    min-height: 100px;
+    font-style: italic;
+}
+
+.timeline-step-status {
+    margin-top: 0;
+}
+
+.step-error {
+    margin-top: 12px;
+}
+
+.action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.artifact-path {
+    background: #334155;
+    border-radius: 6px;
+    font-family: Consolas, monospace;
+    padding: 2px 7px;
+}
+
+@media (max-width: 700px) {
+    .publisher-shell {
+        padding-top: 24px;
+    }
+}
